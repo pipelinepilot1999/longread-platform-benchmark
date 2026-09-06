@@ -1,0 +1,2 @@
+# Clair3 small-variant caller (CPU). Bundles the ONT r1041_e82_400bps_sup_v500 and hifi_revio models under /opt/models.
+FROM hkubal/clair3:v2.0.2

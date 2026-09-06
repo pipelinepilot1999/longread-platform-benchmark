@@ -1,0 +1,2 @@
+#sample	chromosome	file_name	variants	phased	unphased	singletons	blocks	variant_per_block_median	variant_per_block_avg	variant_per_block_min	variant_per_block_max	variant_per_block_sum	bp_per_block_median	bp_per_block_avg	bp_per_block_min	bp_per_block_max	bp_per_block_sum	heterozygous_variants	heterozygous_snvs	phased_snvs	phased_fraction	phased_snvs_fraction	block_n50
+HG002	chr20	hifi.phased.vcf.gz	132752	85831	3860	0	194	174.0	442.42783505154637	2	5121	85831	134672.5	282646.40721649484	530	2126599	54833403	89691	77131	73336	0.9569633519528158	0.9507979930248538	527762

@@ -1,0 +1,2 @@
+platform	raw_reads	raw_bases	native_coverage	downsample_mode	target_coverage	downsample_fraction	reads_analysed	bases_analysed	read_n50	read_mean	read_max	read_min	primary_records	primary_mapped	mapping_rate	supplementary_records	supplementary_per_primary	records_on_target_chrom	fraction_records_on_target_chrom	mean_depth_target_chrom	tagged_MM_fraction	tagged_MM_reads
+hifi	191592	3197192142	49.612	downsampled	49.61	0.99996	191582	3197039845	17394	16687.6	42497	236	191582	191463	0.9994	9652	0.0504	195349	0.9713	49.04	0.8781	166832

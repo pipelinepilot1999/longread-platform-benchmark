@@ -1,0 +1,7 @@
+# ONT modkit: per-read MM/ML modified-base tags -> per-site CpG methylation, haplotype-partitioned
+FROM mambaorg/micromamba:1.5.10
+RUN micromamba install -y -n base -c conda-forge -c bioconda \
+      ont-modkit=0.6.4 samtools=1.21 htslib=1.21 procps-ng && \
+    micromamba clean -a -y
+ENV PATH=/opt/conda/bin:$PATH
+USER root

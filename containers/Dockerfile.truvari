@@ -1,0 +1,7 @@
+# Truvari SV benchmarking + bcftools/htslib for truth-set preparation
+FROM mambaorg/micromamba:1.5.10
+RUN micromamba install -y -n base -c conda-forge -c bioconda \
+      truvari=5.4.0 bcftools=1.21 htslib=1.21 procps-ng && \
+    micromamba clean -a -y
+ENV PATH=/opt/conda/bin:$PATH
+USER root

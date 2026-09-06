@@ -1,0 +1,79 @@
+platform	caller	regime	svtype	size_bin	tp_base	fn	tp_comp	fp	precision	recall	f1	truvari_precision	truvari_recall	truvari_f1
+ont	cutesv	permissive	ALL	ALL	595	207	595	21	0.9659	0.7419	0.8392	0.9659	0.7419	0.8392
+ont	cutesv	permissive	DEL	100-299	64	9	58	0	1.0000	0.8767	0.9343			
+ont	cutesv	permissive	DEL	10k-50k	0	2	0	0	0.0000	0.0000	0.0000			
+ont	cutesv	permissive	DEL	1k-9.9k	18	1	18	0	1.0000	0.9474	0.9730			
+ont	cutesv	permissive	DEL	300-999	42	3	40	1	0.9756	0.9333	0.9540			
+ont	cutesv	permissive	DEL	50-99	85	30	90	3	0.9677	0.7391	0.8381			
+ont	cutesv	permissive	DEL	ALL	209	45	206	4	0.9810	0.8228	0.8950			
+ont	cutesv	permissive	INS	100-299	137	56	139	3	0.9789	0.7098	0.8229			
+ont	cutesv	permissive	INS	10k-50k	0	0	0	0	0.0000	0.0000	0.0000			
+ont	cutesv	permissive	INS	1k-9.9k	44	26	44	2	0.9565	0.6286	0.7586			
+ont	cutesv	permissive	INS	300-999	111	50	109	1	0.9909	0.6894	0.8131			
+ont	cutesv	permissive	INS	50-99	94	30	97	11	0.8981	0.7581	0.8222			
+ont	cutesv	permissive	INS	ALL	386	162	389	17	0.9581	0.7044	0.8119			
+ont	cutesv	default	ALL	ALL	572	230	572	44	0.9286	0.7132	0.8068	0.9286	0.7132	0.8068
+ont	cutesv	default	DEL	100-299	57	16	55	3	0.9483	0.7808	0.8564			
+ont	cutesv	default	DEL	10k-50k	0	2	0	0	0.0000	0.0000	0.0000			
+ont	cutesv	default	DEL	1k-9.9k	18	1	18	0	1.0000	0.9474	0.9730			
+ont	cutesv	default	DEL	300-999	41	4	40	1	0.9756	0.9111	0.9423			
+ont	cutesv	default	DEL	50-99	82	33	85	8	0.9140	0.7130	0.8011			
+ont	cutesv	default	DEL	ALL	198	56	198	12	0.9429	0.7795	0.8534			
+ont	cutesv	default	INS	100-299	128	65	128	14	0.9014	0.6632	0.7642			
+ont	cutesv	default	INS	10k-50k	0	0	0	0	0.0000	0.0000	0.0000			
+ont	cutesv	default	INS	1k-9.9k	44	26	43	3	0.9348	0.6286	0.7517			
+ont	cutesv	default	INS	300-999	111	50	109	1	0.9909	0.6894	0.8131			
+ont	cutesv	default	INS	50-99	91	33	94	14	0.8704	0.7339	0.7963			
+ont	cutesv	default	INS	ALL	374	174	374	32	0.9212	0.6825	0.7841			
+ont	cutesv	strict	ALL	ALL	520	282	520	96	0.8442	0.6484	0.7334	0.8442	0.6484	0.7334
+ont	cutesv	strict	DEL	100-299	53	20	51	7	0.8793	0.7260	0.7954			
+ont	cutesv	strict	DEL	10k-50k	0	2	0	0	0.0000	0.0000	0.0000			
+ont	cutesv	strict	DEL	1k-9.9k	18	1	18	0	1.0000	0.9474	0.9730			
+ont	cutesv	strict	DEL	300-999	40	5	40	1	0.9756	0.8889	0.9302			
+ont	cutesv	strict	DEL	50-99	76	39	78	15	0.8387	0.6609	0.7392			
+ont	cutesv	strict	DEL	ALL	187	67	187	23	0.8905	0.7362	0.8060			
+ont	cutesv	strict	INS	100-299	116	77	115	27	0.8099	0.6010	0.6900			
+ont	cutesv	strict	INS	10k-50k	0	0	0	0	0.0000	0.0000	0.0000			
+ont	cutesv	strict	INS	1k-9.9k	40	30	39	7	0.8478	0.5714	0.6827			
+ont	cutesv	strict	INS	300-999	97	64	96	14	0.8727	0.6025	0.7129			
+ont	cutesv	strict	INS	50-99	80	44	83	25	0.7685	0.6452	0.7015			
+ont	cutesv	strict	INS	ALL	333	215	333	73	0.8202	0.6077	0.6981			
+ont	sniffles	permissive	ALL	ALL	579	223	579	17	0.9715	0.7219	0.8283	0.9715	0.7219	0.8283
+ont	sniffles	permissive	DEL	100-299	57	16	55	2	0.9649	0.7808	0.8632			
+ont	sniffles	permissive	DEL	10k-50k	0	2	0	0	0.0000	0.0000	0.0000			
+ont	sniffles	permissive	DEL	1k-9.9k	15	4	15	2	0.8824	0.7895	0.8333			
+ont	sniffles	permissive	DEL	300-999	39	6	39	2	0.9512	0.8667	0.9070			
+ont	sniffles	permissive	DEL	50-99	89	26	85	2	0.9770	0.7739	0.8637			
+ont	sniffles	permissive	DEL	ALL	200	54	198	8	0.9612	0.7874	0.8656			
+ont	sniffles	permissive	INS	100-299	128	65	128	1	0.9922	0.6632	0.7950			
+ont	sniffles	permissive	INS	10k-50k	0	0	0	0	0.0000	0.0000	0.0000			
+ont	sniffles	permissive	INS	1k-9.9k	46	24	49	3	0.9423	0.6571	0.7743			
+ont	sniffles	permissive	INS	300-999	115	46	114	0	1.0000	0.7143	0.8333			
+ont	sniffles	permissive	INS	50-99	90	34	90	4	0.9574	0.7258	0.8257			
+ont	sniffles	permissive	INS	ALL	379	169	381	8	0.9794	0.6916	0.8107			
+ont	sniffles	default	ALL	ALL	545	257	545	49	0.9175	0.6796	0.7808	0.9175	0.6796	0.7808
+ont	sniffles	default	DEL	100-299	52	21	54	3	0.9474	0.7123	0.8132			
+ont	sniffles	default	DEL	10k-50k	0	2	0	0	0.0000	0.0000	0.0000			
+ont	sniffles	default	DEL	1k-9.9k	15	4	15	2	0.8824	0.7895	0.8333			
+ont	sniffles	default	DEL	300-999	39	6	37	4	0.9024	0.8667	0.8842			
+ont	sniffles	default	DEL	50-99	83	32	81	6	0.9310	0.7217	0.8131			
+ont	sniffles	default	DEL	ALL	189	65	189	15	0.9265	0.7441	0.8253			
+ont	sniffles	default	INS	100-299	120	73	119	10	0.9225	0.6218	0.7428			
+ont	sniffles	default	INS	10k-50k	0	0	0	0	0.0000	0.0000	0.0000			
+ont	sniffles	default	INS	1k-9.9k	45	25	46	6	0.8846	0.6429	0.7446			
+ont	sniffles	default	INS	300-999	105	56	105	9	0.9211	0.6522	0.7636			
+ont	sniffles	default	INS	50-99	86	38	86	8	0.9149	0.6935	0.7890			
+ont	sniffles	default	INS	ALL	356	192	356	33	0.9152	0.6496	0.7599			
+ont	sniffles	strict	ALL	ALL	506	296	506	86	0.8547	0.6309	0.7260	0.8547	0.6309	0.7260
+ont	sniffles	strict	DEL	100-299	50	23	50	7	0.8772	0.6849	0.7692			
+ont	sniffles	strict	DEL	10k-50k	0	2	0	0	0.0000	0.0000	0.0000			
+ont	sniffles	strict	DEL	1k-9.9k	15	4	15	2	0.8824	0.7895	0.8333			
+ont	sniffles	strict	DEL	300-999	36	9	36	5	0.8780	0.8000	0.8372			
+ont	sniffles	strict	DEL	50-99	76	39	76	11	0.8736	0.6609	0.7525			
+ont	sniffles	strict	DEL	ALL	177	77	177	25	0.8762	0.6969	0.7763			
+ont	sniffles	strict	INS	100-299	115	78	115	14	0.8915	0.5959	0.7143			
+ont	sniffles	strict	INS	10k-50k	0	0	0	0	0.0000	0.0000	0.0000			
+ont	sniffles	strict	INS	1k-9.9k	40	30	40	12	0.7692	0.5714	0.6557			
+ont	sniffles	strict	INS	300-999	95	66	95	19	0.8333	0.5901	0.6909			
+ont	sniffles	strict	INS	50-99	79	45	79	15	0.8404	0.6371	0.7248			
+ont	sniffles	strict	INS	ALL	329	219	329	60	0.8458	0.6004	0.7022			

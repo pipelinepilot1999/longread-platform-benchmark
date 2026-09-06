@@ -1,0 +1,30 @@
+# Tool versions and container tags used in this project (all built on the EC2 x86_64 host from containers/).
+pipeline:
+  nextflow: 26.04.6
+  docker: 25.0.14
+containers:
+  longread-platform-benchmark/minimap2:2.30:   {minimap2: 2.30, samtools: 1.21, seqkit: 2.13.0, htslib: 1.21, base: mambaorg/micromamba:1.5.10}
+  longread-platform-benchmark/sniffles:2.8.0:  {sniffles: 2.8.0, bcftools: 1.21, htslib: 1.21}
+  longread-platform-benchmark/cutesv:2.1.4:    {cutesv: 2.1.4, bcftools: 1.21, htslib: 1.21}
+  longread-platform-benchmark/truvari:5.4.0:   {truvari: 5.4.0, bcftools: 1.21, htslib: 1.21}
+  longread-platform-benchmark/clair3:2.0.2:    {clair3: 2.0.2, base: hkubal/clair3:v2.0.2, models: [r1041_e82_400bps_sup_v500, hifi_revio]}
+  longread-platform-benchmark/happy:0.3.15:    {hap.py: 0.3.15, engine: xcmp, base: quay.io/biocontainers/hap.py:0.3.15--py27hcb73b3d_0}
+  longread-platform-benchmark/whatshap:2.8:    {whatshap: 2.8, samtools: 1.21, bcftools: 1.21}
+  longread-platform-benchmark/modkit:0.6.4:    {ont-modkit: 0.6.4, samtools: 1.21}
+  longread-platform-benchmark/analysis:1.0:    {python: 3.12, numpy: 2.2.6, pandas: 2.3.1, scipy: 1.16.1, statsmodels: 0.14.5, matplotlib: 3.10.5, pysam: 0.23.3}
+  quay.io/biocontainers/mosdepth:0.3.14--h87be163_2: {mosdepth: 0.3.14}
+reference:
+  build: GRCh38
+  fasta: GCA_000001405.15_GRCh38_no_alt_analysis_set (md5 a6da8681616c05eb542f1d91606a7b2f)
+truth_sets:
+  sv: GIAB HG002 v5.0q stvar (GRCh38, 2025-01-17, T2T-HG002-Q100 v1.1 assembly-based; draft)
+  small_variants: GIAB HG002 v5.0q smvar (GRCh38, phased)
+  stratifications: GIAB genome-stratifications v3.6 GRCh38@all
+annotations:
+  cpg_islands: UCSC hg38 cpgIslandExt (2023-01-29)
+  genes: GENCODE v50 basic
+  tandem_repeats: Sniffles2 annotations/human_GRCh38_no_alt_analysis_set.trf.bed
+  imprinted_dmrs: Akbari et al. 2022 eLife 11:e77898, Supplementary files 1 and 2 (hg38)
+data:
+  ont: ont-open-data giab_2025.01 HG002 PAW70337 (PromethION, FLO-PRO114M R10.4.1, SQK-LSK114, Dorado dna_r10.4.1_e8.2_400bps_sup@v5.0.0, 5mC_5hmC@v2.0.1), calls.sorted.bam chr20 slice
+  hifi: GIAB PacBio_HiFi-Revio_20231031 HG002 48x GRCh38-GIABv3 BAM (Revio, SMRTbell prep kit 3.0, ccs 7.0.0, primrose 1.4.0 5mC), chr20 slice

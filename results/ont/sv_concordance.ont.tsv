@@ -1,0 +1,13 @@
+platform	category	representative_caller	svtype	n_calls	truth_TP	truth_FP	not_benchmarked	fp_fraction_of_benchmarked
+ont	shared	sniffles	ALL	553	527	26	0	0.0470
+ont	shared	sniffles	DEL	191	184	7	0	0.0366
+ont	shared	sniffles	INS	362	343	19	0	0.0525
+ont	shared	cutesv	ALL	553	529	24	0	0.0434
+ont	shared	cutesv	DEL	191	183	8	0	0.0419
+ont	shared	cutesv	INS	362	346	16	0	0.0442
+ont	sniffles_only	sniffles	ALL	39	16	23	0	0.5897
+ont	sniffles_only	sniffles	DEL	11	3	8	0	0.7273
+ont	sniffles_only	sniffles	INS	27	13	14	0	0.5185
+ont	cutesv_only	cutesv	ALL	63	43	20	0	0.3175
+ont	cutesv_only	cutesv	DEL	19	15	4	0	0.2105
+ont	cutesv_only	cutesv	INS	44	28	16	0	0.3636

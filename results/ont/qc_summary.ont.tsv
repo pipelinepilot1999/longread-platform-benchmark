@@ -1,0 +1,2 @@
+platform	raw_reads	raw_bases	native_coverage	downsample_mode	target_coverage	downsample_fraction	reads_analysed	bases_analysed	read_n50	read_mean	read_max	read_min	primary_records	primary_mapped	mapping_rate	supplementary_records	supplementary_per_primary	records_on_target_chrom	fraction_records_on_target_chrom	mean_depth_target_chrom	tagged_MM_fraction	tagged_MM_reads
+ont	188140	3519431361	54.612	downsampled	49.61	0.90841	170899	3196289176	29418	18702.8	629276	78	170899	170882	0.9999	16680	0.0976	170726	0.9102	46.89	1.0000	166412

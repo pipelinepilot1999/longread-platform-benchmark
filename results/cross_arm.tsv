@@ -1,0 +1,7 @@
+platform	test	n_gaps	n_tp_sv	observed_fraction	null_mean_fraction	null_sd	enrichment	empirical_p	note
+ont	phase_block_gaps_containing_TP_SV_within_1kb	108	572	0.1296	0.2529551748009692	0.051979035922861495	0.5125	0.996	null = circularly shifted gap positions (500 shifts)
+hifi	phase_block_gaps_containing_TP_SV_within_1kb	193	552	0.171	0.23204263816925733	0.027384496945337164	0.7369	0.984	null = circularly shifted gap positions (500 shifts)
+ont	unassigned_read_fraction_vs_het_density_500kb	128		0.1826			-0.6031	4.942e-14	enrichment column = Spearman rho between het variants per window and unassigned fraction; observed = median unassigned fraction
+hifi	unassigned_read_fraction_vs_het_density_500kb	128		0.07044			-0.4878	5.219e-09	enrichment column = Spearman rho between het variants per window and unassigned fraction; observed = median unassigned fraction
+ont	methylation_within_1kb_of_TP_SV_breakpoints_vs_CpG_matched_random_windows	742	3794	0.6773	0.6273526828200613	0.2287653111598391	0.04996	3.731e-07	enrichment column = mean methylation difference (SV windows - control); Mann-Whitney p
+both	overlap_of_SV_divergent_and_phasing_divergent_100kb_windows	49	181	0.2449	0.2806201550387597		0.8194	0.6231	observed = fraction of SV-divergent windows that are also phasing-divergent; null = overall fraction of phasing-divergent windows; enrichment = Fisher odds ratio; table=[[12, 37], [169, 427]]

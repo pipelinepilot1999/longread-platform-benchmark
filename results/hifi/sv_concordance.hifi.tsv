@@ -1,0 +1,13 @@
+platform	category	representative_caller	svtype	n_calls	truth_TP	truth_FP	not_benchmarked	fp_fraction_of_benchmarked
+hifi	shared	sniffles	ALL	486	473	13	0	0.0267
+hifi	shared	sniffles	DEL	179	176	3	0	0.0168
+hifi	shared	sniffles	INS	307	297	10	0	0.0326
+hifi	shared	cutesv	ALL	486	477	9	0	0.0185
+hifi	shared	cutesv	DEL	179	177	2	0	0.0112
+hifi	shared	cutesv	INS	307	300	7	0	0.0228
+hifi	sniffles_only	sniffles	ALL	102	77	25	0	0.2451
+hifi	sniffles_only	sniffles	DEL	24	16	8	0	0.3333
+hifi	sniffles_only	sniffles	INS	77	61	16	0	0.2078
+hifi	cutesv_only	cutesv	ALL	14	10	4	0	0.2857
+hifi	cutesv_only	cutesv	DEL	2	2	0	0	0.0000
+hifi	cutesv_only	cutesv	INS	12	8	4	0	0.3333

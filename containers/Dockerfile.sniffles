@@ -1,0 +1,7 @@
+# Sniffles2 structural variant caller + bcftools for sort/bgzip/index
+FROM mambaorg/micromamba:1.5.10
+RUN micromamba install -y -n base -c conda-forge -c bioconda \
+      sniffles=2.8.0 bcftools=1.21 htslib=1.21 procps-ng && \
+    micromamba clean -a -y
+ENV PATH=/opt/conda/bin:$PATH
+USER root
