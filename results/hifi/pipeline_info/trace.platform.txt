@@ -1,0 +1,163 @@
+task_id	hash	name	status	exit	realtime	cpus	%cpu	peak_rss	script
+4	23/980384	PLATFORM:MINIMAP2_INDEX (map-hifi)	COMPLETED	0	6m 20s	4	37.4%	11.1 GB	
+    minimap2 -t 4 -x map-hifi -d GRCh38.map-hifi.mmi GRCh38.fa
+    
+2	33/04adb0	PLATFORM:BAM_TO_FASTQ (hifi)	COMPLETED	0	7m 3s	2	126.2%	12.4 MB	
+    samtools flagstat -@ 2 hifi_chr20.raw.bam > hifi.raw_bam.flagstat.txt
+    # -F 0x900: primary records only (supplementary/secondary carry hard-clipped partial sequence).
+    # -T MM,ML,qs: keep the modified-base tags (and ONT read q-score) in the FASTQ comment field.
+    samtools fastq -@ 2 -F 0x900 -T MM,ML,qs hifi_chr20.raw.bam | bgzip -@ 2 -c > hifi.raw.fastq.gz
+    n=$(zcat hifi.raw.fastq.gz | head -400 | awk 'NR%4==1' | grep -c 'MM:Z')
+    echo "reads_with_MM_in_first_100: $n"
+    
+5	5e/60d1f4	PLATFORM:NATIVE_COVERAGE (hifi)	COMPLETED	0	5m 22s	2	93.4%	57.4 MB	
+    seqkit stats -a -T -j 2 hifi.raw.fastq.gz > seqkit.tsv
+    # columns of seqkit stats -a -T: file format type num_seqs sum_len min_len avg_len max_len Q1 Q2 Q3 sum_gap N50 ...
+    awk -F'\t' -v p=hifi -v L=64444167 'NR==1{for(i=1;i<=NF;i++)h[$i]=i}
+        NR==2{printf "platform\treads\tbases\tread_n50\tmean_len\tnative_coverage\n%s\t%s\t%s\t%s\t%s\t%.3f\n", p, $h["num_seqs"], $h["sum_len"], $h["N50"], $h["avg_len"], $h["sum_len"]/L}' seqkit.tsv > hifi.native_coverage.tsv
+    cat hifi.native_coverage.tsv
+    
+6	ca/74ff41	PLATFORM:DOWNSAMPLE (hifi)	COMPLETED	0	11m 50s	2	108.4%	62.7 MB	
+        seqkit sample -p 0.99996 -s 11 -j 2 hifi.raw.fastq.gz | bgzip -@ 2 -c > hifi.reads.fastq.gz
+        printf 'platform\tmode\tnative_coverage\ttarget_coverage\tfraction\nhifi\tdownsampled\t49.612\t49.61\t0.99996\n' > hifi.downsample.tsv
+        
+7	4f/ab4007	PLATFORM:READ_STATS (hifi)	COMPLETED	0	10m 26s	2	91.6%	61 MB	
+    seqkit stats -a -T -j 2 hifi.reads.fastq.gz > hifi.seqkit_stats.tsv
+    seqkit fx2tab -n -l -j 2 hifi.reads.fastq.gz | awk '{print $NF}' | gzip -c > hifi.read_lengths.txt.gz
+    
+8	a2/b4dae5	PLATFORM:MINIMAP2_ALIGN (hifi)	COMPLETED	0	1h 32s	6	168.5%	17.4 GB	
+    cmd="minimap2 -t 6 -ax map-hifi -y --secondary=no -R '@RG\tID:hifi\tSM:HG002\tPL:PACBIO' GRCh38.map-hifi.mmi hifi.reads.fastq.gz"
+    echo "$cmd" > hifi.minimap2.cmd
+    minimap2 -t 6 -ax map-hifi -y --secondary=no -R '@RG\tID:hifi\tSM:HG002\tPL:PACBIO' GRCh38.map-hifi.mmi hifi.reads.fastq.gz \
+      | samtools sort -@ 2 -m 1500M -T sort_tmp -o hifi.full.bam -
+    samtools index -@ 6 hifi.full.bam
+    
+9	c3/aa1994	PLATFORM:ALIGN_QC (hifi)	COMPLETED	0	3m 14s	2	75.6%	189 MB	
+    samtools flagstat -@ 2 hifi.full.bam > hifi.flagstat.txt
+    samtools idxstats hifi.full.bam > hifi.idxstats.txt
+    samtools stats -@ 2 hifi.full.bam > hifi.samtools_stats.txt
+    
+10	cc/ba6a48	PLATFORM:SUBSET_CHROM (hifi)	COMPLETED	0	3m 38s	2	99.8%	12.2 MB	
+    samtools view -@ 2 -b -o hifi.chr20.bam hifi.full.bam chr20
+    samtools index -@ 2 hifi.chr20.bam
+    
+15	1f/926a44	PLATFORM:MOSDEPTH (hifi)	COMPLETED	0	20s	2	80.7%	255.8 MB	
+    mosdepth -t 2 -n --fast-mode --by 10000 -c chr20 hifi hifi.chr20.bam
+    
+12	e4/e746ce	PLATFORM:CUTESV (hifi)	COMPLETED	0	1m 8s	4	116.7%	2.5 GB	
+    mkdir -p work
+    cmd="cuteSV -t 4 -l 50 --genotype -S HG002_hifi --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 hifi.chr20.bam GRCh38.fa raw.vcf work"
+    echo "$cmd" > hifi.cutesv.cmd
+    $cmd
+    bcftools sort -Oz -o hifi.cutesv.vcf.gz raw.vcf
+    tabix -p vcf hifi.cutesv.vcf.gz
+    
+13	ae/84f6b5	PLATFORM:ASSERT_TAGS (hifi)	COMPLETED	0	1m 33s	1	38.9%	6.7 MB	
+    total=$(samtools view -c -F 0x904 hifi.chr20.bam)
+    mm=$(samtools view -c -F 0x904 -d MM hifi.chr20.bam)
+    ml=$(samtools view -c -F 0x904 -d ML hifi.chr20.bam)
+    printf 'platform\tprimary_reads\twith_MM\twith_ML\tfraction_MM\n' > hifi.tag_survival.tsv
+    awk -v p=hifi -v t=$total -v a=$mm -v b=$ml 'BEGIN{printf "%s\t%d\t%d\t%d\t%.4f\n", p, t, a, b, (t>0?a/t:0)}' >> hifi.tag_survival.tsv
+    cat hifi.tag_survival.tsv
+    if [ "$mm" -eq 0 ] || [ "$ml" -eq 0 ]; then
+        echo "ASSERTION FAILED: no MM/ML-tagged records survived realignment (section 4.3 handling broke)" >&2
+        exit 1
+    fi
+    
+16	68/0b93e6	PLATFORM:TRUVARI_BENCH (hifi:cutesv:permissive)	COMPLETED	0	18.7s	2	56.8%	99.9 MB	
+    truvari bench -b truth_sv.chr20.vcf.gz -c hifi.cutesv.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore -o cutesv_permissive
+    echo "truvari bench --includebed truth_sv.chr20.bed --passonly --sizemin 50 --sizefilt 30 --refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore" > cutesv_permissive/cmd.txt
+    
+17	d6/0574ab	PLATFORM:TRUVARI_BENCH (hifi:cutesv:default)	COMPLETED	0	16.6s	2	57.6%	100.3 MB	
+    truvari bench -b truth_sv.chr20.vcf.gz -c hifi.cutesv.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 500 --pctseq 0.7 --pctsize 0.7 -o cutesv_default
+    echo "truvari bench --includebed truth_sv.chr20.bed --passonly --sizemin 50 --sizefilt 30 --refdist 500 --pctseq 0.7 --pctsize 0.7" > cutesv_default/cmd.txt
+    
+18	61/6805eb	PLATFORM:TRUVARI_BENCH (hifi:cutesv:strict)	COMPLETED	0	18.6s	2	55.5%	100 MB	
+    truvari bench -b truth_sv.chr20.vcf.gz -c hifi.cutesv.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 100 --pctseq 0.9 --pctsize 0.9 -o cutesv_strict
+    echo "truvari bench --includebed truth_sv.chr20.bed --passonly --sizemin 50 --sizefilt 30 --refdist 100 --pctseq 0.9 --pctsize 0.9" > cutesv_strict/cmd.txt
+    
+19	3a/9228f4	PLATFORM:QC_SUMMARY	COMPLETED	0	233ms	2	29.6%	13.8 MB	
+    python3 scripts/qc_summary.py --platform hifi --native hifi.native_coverage.tsv --downsample hifi.downsample.tsv \
+        --seqkit hifi.seqkit_stats.tsv --flagstat hifi.flagstat.txt --idxstats hifi.idxstats.txt --mosdepth hifi.mosdepth.summary.txt --tags hifi.tag_survival.tsv \
+        --chrom chr20 --out qc_summary.hifi.tsv
+    
+11	4e/fb125a	PLATFORM:CLAIR3 (hifi)	COMPLETED	0	22m 6s	6	126.1%	7.1 GB	
+    export HOME=$PWD
+    cmd="/opt/bin/run_clair3.sh --bam_fn=hifi.chr20.bam --ref_fn=GRCh38.fa --threads=6 --platform=hifi --model_path=/opt/models/hifi_revio --output=clair3 --ctg_name=chr20 --sample_name=HG002"
+    echo "$cmd" > hifi.clair3.cmd
+    $cmd
+    cp clair3/merge_output.vcf.gz hifi.clair3.vcf.gz
+    cp clair3/merge_output.vcf.gz.tbi hifi.clair3.vcf.gz.tbi
+    
+14	8d/7464f4	PLATFORM:SNIFFLES (hifi)	COMPLETED	0	1m 21s	4	94.3%	2.9 GB	
+    cmd="sniffles --input hifi.chr20.bam --vcf raw.vcf --reference GRCh38.fa --tandem-repeats human_GRCh38_no_alt_analysis_set.trf.bed --minsvlen 50 --threads 4 --sample-id HG002_hifi"
+    echo "$cmd" > hifi.sniffles.cmd
+    $cmd
+    bcftools sort -Oz -o hifi.sniffles.vcf.gz raw.vcf
+    tabix -p vcf hifi.sniffles.vcf.gz
+    
+22	44/c303ab	PLATFORM:CALLER_CONCORDANCE (hifi)	COMPLETED	0	3.4s	2	52.4%	100.4 MB	
+    truvari bench -b hifi.sniffles.vcf.gz -c hifi.cutesv.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 500 --pctseq 0.7 --pctsize 0.7 -o caller_concordance
+    echo "base=sniffles comp=cutesv regime=default" > caller_concordance/cmd.txt
+    
+25	30/9d3ac7	PLATFORM:TRUVARI_BENCH (hifi:sniffles:strict)	COMPLETED	0	18.2s	2	54.4%	97.8 MB	
+    truvari bench -b truth_sv.chr20.vcf.gz -c hifi.sniffles.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 100 --pctseq 0.9 --pctsize 0.9 -o sniffles_strict
+    echo "truvari bench --includebed truth_sv.chr20.bed --passonly --sizemin 50 --sizefilt 30 --refdist 100 --pctseq 0.9 --pctsize 0.9" > sniffles_strict/cmd.txt
+    
+24	b8/d1282a	PLATFORM:TRUVARI_BENCH (hifi:sniffles:default)	COMPLETED	0	18.7s	2	57.0%	98.2 MB	
+    truvari bench -b truth_sv.chr20.vcf.gz -c hifi.sniffles.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 500 --pctseq 0.7 --pctsize 0.7 -o sniffles_default
+    echo "truvari bench --includebed truth_sv.chr20.bed --passonly --sizemin 50 --sizefilt 30 --refdist 500 --pctseq 0.7 --pctsize 0.7" > sniffles_default/cmd.txt
+    
+23	ee/4fa4a8	PLATFORM:TRUVARI_BENCH (hifi:sniffles:permissive)	COMPLETED	0	17.4s	2	57.7%	97.9 MB	
+    truvari bench -b truth_sv.chr20.vcf.gz -c hifi.sniffles.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore -o sniffles_permissive
+    echo "truvari bench --includebed truth_sv.chr20.bed --passonly --sizemin 50 --sizefilt 30 --refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore" > sniffles_permissive/cmd.txt
+    
+26	e7/24230f	PLATFORM:SV_SUMMARY	COMPLETED	0	964ms	2	39.8%	4.9 MB	
+    python3 scripts/sv_summary.py --platform hifi --bench cutesv_permissive cutesv_default cutesv_strict sniffles_strict sniffles_default sniffles_permissive --concordance caller_concordance --outdir .
+    
+21	40/3eb7f2	PLATFORM:HAPPY (hifi)	COMPLETED	0	2m 21s	2	58.8%	6.1 GB	
+    export HGREF=GRCh38.fa
+    hap.py truth_sm.chr20.vcf.gz hifi.clair3.vcf.gz -f truth_sm.chr20.bed -r GRCh38.fa -l chr20 \
+        --stratification strata.tsv --pass-only --threads 2 --no-roc --no-json \
+        -o hifi.happy
+    
+27	a9/9df94f	PLATFORM:SMALLVAR_SUMMARY	COMPLETED	0	197ms	2	25.9%	3.4 MB	
+    python3 scripts/smallvar_summary.py --platform hifi --extended hifi.happy.extended.csv --out smallvar_benchmark.hifi.tsv
+    
+20	9f/b5e601	PLATFORM:WHATSHAP_PHASE (hifi)	COMPLETED	0	16m 2s	2	85.2%	754.7 MB	
+    bcftools view -f PASS -r chr20 -Oz -o pass.vcf.gz hifi.clair3.vcf.gz
+    tabix -p vcf pass.vcf.gz
+    whatshap phase --reference GRCh38.fa --ignore-read-groups -o hifi.phased.vcf.gz pass.vcf.gz hifi.chr20.bam
+    tabix -p vcf hifi.phased.vcf.gz
+    
+28	f2/056a57	PLATFORM:WHATSHAP_STATS (hifi)	COMPLETED	0	8.7s	1	54.9%	86.4 MB	
+    whatshap stats --tsv hifi.whatshap_stats.tsv --block-list hifi.blocks.tsv --gtf hifi.blocks.gtf hifi.phased.vcf.gz
+    
+29	00/cc2fc4	PLATFORM:WHATSHAP_COMPARE (hifi)	COMPLETED	0	14.4s	1	69.1%	134.6 MB	
+    whatshap compare --names truth,hifi --ignore-sample-name --only-snvs \
+        --tsv-pairwise hifi.whatshap_compare.tsv --switch-error-bed hifi.switch_errors.bed \
+        truth_sm.chr20.vcf.gz hifi.phased.vcf.gz > hifi.whatshap_compare.log
+    
+30	37/737f71	PLATFORM:WHATSHAP_HAPLOTAG (hifi)	COMPLETED	0	6m 15s	4	130.5%	583.4 MB	
+    whatshap haplotag --reference GRCh38.fa --ignore-read-groups --tag-supplementary \
+        --output-threads 4 --output-haplotag-list hifi.haplotag_list.tsv.gz \
+        -o hifi.chr20.haplotagged.bam hifi.phased.vcf.gz hifi.chr20.bam
+    samtools index -@ 4 hifi.chr20.haplotagged.bam
+    total=$(samtools view -c -F 0x904 hifi.chr20.haplotagged.bam)
+    h1=$(samtools view -c -F 0x904 -d HP:1 hifi.chr20.haplotagged.bam)
+    h2=$(samtools view -c -F 0x904 -d HP:2 hifi.chr20.haplotagged.bam)
+    printf 'platform\tprimary_reads\thp1\thp2\tunassigned\tfraction_tagged\n' > hifi.haplotag_counts.tsv
+    awk -v p=hifi -v t=$total -v a=$h1 -v b=$h2 'BEGIN{printf "%s\t%d\t%d\t%d\t%d\t%.4f\n", p, t, a, b, t-a-b, (t>0?(a+b)/t:0)}' >> hifi.haplotag_counts.tsv
+    cat hifi.haplotag_counts.tsv
+    
+31	ad/1e8ae3	PLATFORM:PHASING_SUMMARY	COMPLETED	0	730ms	2	87.5%	17.7 MB	
+    python3 scripts/phasing_summary.py --platform hifi --stats hifi.whatshap_stats.tsv --blocks hifi.blocks.tsv \
+        --compare hifi.whatshap_compare.tsv --haplotag hifi.haplotag_counts.tsv --read-lengths hifi.read_lengths.txt.gz --out phasing_stats.hifi.tsv
+    

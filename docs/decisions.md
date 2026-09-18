@@ -1,8 +1,7 @@
 # Decision log
 
 One entry per decision where a reasonable alternative existed. Numbered in the order the decision was
-taken. "Effect on results" was filled in once the relevant stage had run; no entry is
-updated at the end of the run.
+taken. "Effect on results" was filled in once the relevant stage had run.
 
 ### D-001: Reference build and FASTA
 **Chose:** GRCh38, `GCA_000001405.15_GRCh38_no_alt_analysis_set` (195 contigs, `chr`-prefixed), the copy already on the host at `/home/ec2-user/wgs-wes/ref/GRCh38.fa` (md5 `a6da8681616c05eb542f1d91606a7b2f`).
@@ -79,7 +78,7 @@ permissive `--refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore`; default `--re
 **Chose:** Clair3 2.0.2 (CPU), model `r1041_e82_400bps_sup_v500` for ONT (exact match to the basecaller model) and `hifi_revio` for HiFi; PASS calls only downstream.
 **Alternatives considered:** DeepVariant (ONT_R104 / PACBIO models) on CPU. Not run: a CPU DeepVariant call of chr20 at ~45x is several hours per platform on the 6 cores available here, on a host already loaded by two other pipelines, and DeepVariant's ONT model is trained on R10.4.1 Dorado v4/v5 sup data without an exact model per basecaller, whereas Clair3 ships one for this basecaller. The brief benchmark the spec asks for was therefore replaced by this reasoning and is listed in the limitations.
 **Source:** Clair3 model list in the container (`/opt/models`); own judgment on runtime.
-**Effect on results:** SNV F1 0.9934 (ONT) / 0.9957 (HiFi); indel F1 0.747 / 0.867; indel F1 inside homopolymers >= 12 bp 0.395 / 0.712. Clair3 ran in 1.5-2 h per platform on 6 cpus.
+**Effect on results:** SNV F1 0.9934 (ONT) / 0.9957 (HiFi); indel F1 0.747 / 0.867; indel F1 inside homopolymers >= 12 bp 0.395 / 0.712. Clair3 took 22 min on HiFi (6 cpus, Nextflow trace); the ONT runtime is not recoverable because the ONT platform trace was overwritten by the compare stage.
 
 ### D-012: Small-variant benchmarking
 **Chose:** hap.py 0.3.15 with its built-in `xcmp` engine, `--pass-only`, restricted to chr20 (`-l chr20`) and the v5.0q smvar BED, with GIAB v3.6 stratifications subset to chr20: homopolymers 4-6 / 7-11 / >=12 bp, imperfect homopolymers >=11, all vs not-in homopolymers >=7, all vs not-in tandem repeats + homopolymers, segmental duplications.
@@ -98,7 +97,7 @@ permissive `--refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore`; default `--re
 ### D-014: Methylation pileup and coverage thresholds
 **Chose:** modkit 0.6.4 `pileup --cpg --combine-strands --modified-bases 5mC` (5mC only, both strands of each CpG combined; the 5hmC and 6mA calls present in the Dorado tags are not tabulated), default pass-probability filtering; haplotype partition with `--phased` on the `HP` tag written by WhatsHap. Minimum coverage 10 reads per CpG for unphased analyses, 5 reads per haplotype for the phased comparison.
 **Alternatives considered:** keeping 5hmC as a separate modification; per-strand sites; thresholds of 3 or 10 per haplotype. (`--ignore h`, the flag used in older modkit releases, no longer exists in 0.6.4; the smoke test caught this.)
-**Reasoning:** the analysis is about 5mC at CpGs; combining strands doubles per-site depth. At ~45x total, after haplotagging each haplotype carries roughly 15-20 reads at a typical CpG, so 5 per haplotype retains most sites while excluding the tail where a Fisher test cannot reach significance anyway. `results/methylation_site_counts.tsv` reports sites surviving 1/3/5/10/15/20.
+**Reasoning:** the analysis is about 5mC at CpGs; combining strands doubles per-site depth. At ~45x total, after haplotagging each haplotype carries roughly 15-20 reads at a typical CpG, so 5 per haplotype retains most sites while excluding the tail where a Fisher test cannot reach significance anyway. `results/ont/methylation_site_counts.tsv` reports sites surviving 1/3/5/10/15/20.
 **Source:** modkit documentation; own judgment.
 **Effect on results:** CpGs testable on both haplotypes: 732,441 at >= 1 read, 710,713 at >= 5 (chosen), 640,464 at >= 10, 446,225 at >= 15, 161,663 at >= 20. Unphased sites at >= 10: 743,745.
 
@@ -114,7 +113,7 @@ permissive `--refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore`; default `--re
 **Alternatives considered:** deriving windows from imprinted-gene promoters (self-consistent but circular); Court et al. 2014 hg19 coordinates lifted over.
 **Reasoning:** the eLife table is already on hg38 (its GNAS and NNAT coordinates coincide with the GENCODE v50 gene positions on the host), cites the primary literature per DMR, and gives the parental origin, which lets the report check that the maternal DMRs of the GNAS cluster fall on the same haplotype as each other and opposite the paternal NESP55 DMR.
 **Source:** https://elifesciences.org/articles/77898 (Supplementary files 1 and 2).
-**Effect on results:** 5 of 7 primary DMRs pass, NESP-AS weak (right direction, 0.47 vs 0.09), L3MBTL1 fails because HG002 has no heterozygous variant within 45 kb of it (zero in v5.0q); the criterion was not relaxed to make it pass and the failure is reported with its cause.
+**Effect on results:** 4 of 7 primary DMRs pass (`control_pass`); GNAS-XL misses the separation threshold by 0.003 (0.497), NESP-AS weak (right direction, 0.47 vs 0.09), L3MBTL1 fails because HG002 has no heterozygous variant within 45 kb of it (zero in v5.0q); the criterion was not relaxed to make it pass and the failure is reported with its cause.
 
 ### D-017: Genomic-context definitions
 **Chose:** CpG islands = UCSC `cpgIslandExt` (hg38); shores = 2 kb flanks of islands not in an island; promoters = TSS +/- 1 kb of GENCODE v50 basic protein-coding genes; gene bodies = protein-coding gene spans; intergenic = everything else. Sites are assigned exclusively in that priority order. Promoter islands are islands overlapping a promoter window.
@@ -157,3 +156,10 @@ permissive `--refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore`; default `--re
 **Reasoning:** Nextflow 26.04 with the strict parser rejects `-entry` ("use a param to run a named workflow from the entry workflow"); the failure was immediate and the fix is a one-line dispatch.
 **Source:** Nextflow error message on the first compare launch, 2026-09-05.
 **Effect on results:** none.
+
+### D-023: Methylation on ONT only
+**Chose:** Arm C (modkit pileups, context analysis, allele-specific methylation, imprinting control) runs only when `--platform ont` (`main.nf`).
+**Alternatives considered:** running the same arm on the Revio reads, which carry primrose 5mC tags on 87.8 % of reads and survive the same `-T MM,ML` / `-y` handling (`results/hifi/qc/hifi.tag_survival.tsv`).
+**Reasoning:** spec section 3 scopes it this way: the analysis is structurally identical once tags are in hand, so a second run adds disk and runtime without a new finding. What is lost is a cross-platform methylation concordance, which would have been a finding; that is recorded in the limitations.
+**Source:** spec section 3; own judgment on the cost.
+**Effect on results:** no HiFi methylation numbers exist anywhere in this repository; every statement about HiFi methylation in the results is an expectation, not a measurement.

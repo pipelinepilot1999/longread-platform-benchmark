@@ -1,0 +1,11 @@
+task_id	hash	name	status	exit	realtime	cpus	%cpu	peak_rss	script
+2	a1/f7ffd8	COMPARE:PLATFORM_CONCORDANCE (cutesv_ont_vs_sniffles_hifi)	COMPLETED	0	3.3s	2	69.4%	89.6 MB	
+    truvari bench -b ont.cutesv.vcf.gz -c hifi.sniffles.vcf.gz -f GRCh38.fa --includebed truth_sv.chr20.bed \
+        --passonly --sizemin 50 --sizefilt 30 --refdist 500 --pctseq 0.7 --pctsize 0.7 -o platform_concordance
+    echo "base=ont:cutesv comp=hifi:sniffles regime=default" > platform_concordance/cmd.txt
+    
+3	fc/de544b	COMPARE:CROSS_PLATFORM (1)	COMPLETED	0	1m 41s	2	98.8%	221.2 MB	
+    mkdir -p figures
+    python3 scripts/platform_compare.py --ont ont --hifi hifi --concordance platform_concordance \
+        --chrom chr20 --chrom-len 64444167 --best cutesv,sniffles --outdir .
+    

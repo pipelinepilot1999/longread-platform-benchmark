@@ -6,7 +6,7 @@
 //   nextflow run main.nf --stage compare --best_caller.ont cutesv --best_caller.hifi sniffles   (after both platform runs)
 //
 // One platform per run is deliberate: the host cannot hold both platforms' BAMs and work directories
-// at once (docs/decisions.md D-005). Arm C (methylation) runs only when --platform ont.
+// at once (docs/decisions.md D-007). Arm C (methylation) runs only when --platform ont.
 
 nextflow.enable.dsl = 2
 

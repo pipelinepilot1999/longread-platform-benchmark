@@ -6,8 +6,9 @@ and the expected split by SV class only half appears: ONT recall is equal or hig
 deletion bin above 100 bp, HiFi wins only 50-99 bp deletions (0.77 vs 0.71) and precision (0.94 vs 0.93). Where the platforms
 really separate is small indels and phasing: HiFi indel F1 0.87 vs ONT 0.75 (in homopolymers >= 12 bp, 0.71 vs 0.40) while
 SNV F1 is 0.996 vs 0.993, and ONT read length turns into 2.1 Mb phase blocks against 0.53 Mb for HiFi with a lower switch
-error (0.07 % vs 0.22 %). ONT phased methylation recovers the imprinting signature at five of seven known chr20 DMRs cleanly
-(GNAS cluster internally consistent: maternal DMRs on one haplotype, the paternal NESP55 DMR on the other); the one clear
+error (0.07 % vs 0.22 %). ONT phased methylation recovers the imprinting signature at four of seven known chr20 DMRs under the pre-stated pass
+criterion and at six of seven in direction (GNAS-XL misses the 0.50 separation threshold at 0.497, NESP-AS separates weakly;
+GNAS cluster internally consistent: maternal DMRs on one haplotype, the paternal NESP55 DMR on the other); the one clear
 failure, L3MBTL1, is a run of homozygosity where read-based phasing has nothing to phase.
 
 All numbers below are for **chr20 only**, HG002, both platforms at a **matched 49.6x** coverage,
@@ -21,7 +22,7 @@ Tables are in `results/`; every parameter is in `docs/decisions.md`; assertion o
 | Chemistry / basecaller | R10.4.1, LSK114; Dorado `dna_r10.4.1_e8.2_400bps_sup@v5.0.0`, `5mC_5hmC@v2.0.1` | Revio, SMRTbell 3.0; ccs 7.0.0, primrose 1.4.0 |
 | chr20-preselected reads / bases | 188,140 / 3.52 Gb | 191,592 / 3.20 Gb |
 | Native chr20 coverage | **54.6x** | **49.6x** |
-| Downsampling to 49.6x | fraction 0.9084 (seed 11) | none (0.99996) |
+| Downsampling to 49.61x | fraction 0.90841 (seed 11) | fraction 0.99996 (10 reads dropped) |
 | Reads analysed | 170,899 | 191,582 |
 | Read N50 / mean / max | **29,418** / 18,703 / 629,276 bp | **17,394** / 16,688 / 42,497 bp |
 | Mapping rate (primary) | 99.99 % | 99.94 % |
@@ -32,7 +33,7 @@ Tables are in `results/`; every parameter is in `docs/decisions.md`; assertion o
 
 Coverage matching: native chr20 coverage = total bases of the primary, chr20-preselected reads / 64,444,167 bp.
 ONT was the deeper set and was downsampled on the FASTQ (`seqkit sample -p 0.90841 -s 11`) before
-alignment; HiFi ran at native depth. Both platforms therefore entered alignment with the same number of
+alignment; HiFi was already at the target (native 49.612x, fraction 0.99996, 10 of 191,592 reads dropped). Both platforms therefore entered alignment with the same number of
 sequenced bases over chr20. Mapping and supplementary rates are computed on primary records of the
 downsampled read sets after re-alignment to the full genome; "records on chr20" is the fraction of the
 pre-selected reads that landed back on chr20.
@@ -56,13 +57,13 @@ v5.0q VCF; half of the chr20 SVs lie outside the curated regions and are not sco
 | ONT | cuteSV | permissive | 595 | 21 | 207 | 0.966 | 0.742 | 0.839 |
 | ONT | cuteSV | **default** | 572 | 44 | 230 | 0.929 | 0.713 | **0.807** |
 | ONT | cuteSV | strict | 520 | 96 | 282 | 0.844 | 0.648 | 0.733 |
-| ONT | Sniffles2 | permissive | 579 | 17 | 223 | 0.972 | 0.722 | 0.828 |
+| ONT | Sniffles2 | permissive | 579 | 17 | 223 | 0.971 | 0.722 | 0.828 |
 | ONT | Sniffles2 | default | 545 | 49 | 257 | 0.918 | 0.680 | 0.781 |
 | ONT | Sniffles2 | strict | 506 | 86 | 296 | 0.855 | 0.631 | 0.726 |
 | HiFi | cuteSV | permissive | 499 | 1 | 303 | 0.998 | 0.622 | 0.767 |
 | HiFi | cuteSV | default | 487 | 13 | 315 | 0.974 | 0.607 | 0.748 |
 | HiFi | cuteSV | strict | 419 | 81 | 383 | 0.838 | 0.522 | 0.644 |
-| HiFi | Sniffles2 | permissive | 577 | 15 | 225 | 0.975 | 0.720 | 0.828 |
+| HiFi | Sniffles2 | permissive | 577 | 15 | 225 | 0.975 | 0.719 | 0.828 |
 | HiFi | Sniffles2 | **default** | 552 | 38 | 250 | 0.936 | 0.688 | **0.793** |
 | HiFi | Sniffles2 | strict | 513 | 75 | 289 | 0.872 | 0.640 | 0.738 |
 
@@ -70,15 +71,17 @@ Regimes (D-010): permissive `--refdist 1000 --pctseq 0 --pctsize 0.5 --typeignor
 strict `--refdist 100 --pctseq 0.9 --pctsize 0.9`. All: `--includebed`, `--passonly`, `--sizemin 50 --sizefilt 30`, sizemax 50 kb.
 
 The best caller differs by platform: **cuteSV on ONT** (F1 0.807) and **Sniffles2 on HiFi** (0.793); those two are used for
-the platform comparison. cuteSV on HiFi is the outlier (recall 0.61): with the README's HiFi clustering parameters it merges
-insertions in tandem repeats aggressively and misses 36 of 70 insertions >= 1 kb that Sniffles2 finds on the same BAM.
+the platform comparison. cuteSV on HiFi is the outlier (recall 0.61): with the README's HiFi clustering parameters it misses 36 of the 70 truth
+insertions >= 1 kb (recall 0.49), against 27 missed by Sniffles2 on the same BAM (0.61); the likely mechanism, aggressive merging
+of insertion signatures in tandem repeats, was not tested directly.
 
-The numbers move between regimes for two different reasons. Going from default to strict costs 6-9 points of recall and 7-14
+The numbers move between regimes for two different reasons. Going from default to strict costs 5-8 points of recall and 6-14
 points of precision on every caller/platform, and the loss is concentrated in insertions inside tandem repeats: the call is
 the right event with the right size but its breakpoint is placed a few hundred bp away or its inserted sequence shares < 90 %
 identity with the assembly-derived truth allele, so under strict matching a true call becomes an FP + FN pair. Going from
-default to permissive recovers 3-4 points of recall (breakpoint distance up to 1 kb, no sequence requirement) and 4-7 points of
-precision; the remaining ~26-31 % of truth SVs that are missed even permissively are genuinely uncalled, not mis-matched.
+default to permissive recovers 1.5-4 points of recall (breakpoint distance up to 1 kb, no sequence requirement) and 2-5 points of
+precision; the remaining 26-38 % of truth SVs that are missed even permissively (26-28 % without the HiFi cuteSV outlier) are
+genuinely uncalled, not mis-matched.
 The platform gap is stable across regimes (ONT-cuteSV minus HiFi-Sniffles2: +1.1, +1.4, -0.5 F1 points), so the conclusion
 does not depend on the matching definition.
 
@@ -98,8 +101,10 @@ Sniffles2 vs cuteSV on the same BAM, Truvari default regime inside the BED, each
 **Caller-unique calls are enriched for false positives by an order of magnitude** (25-59 % FP against 2-5 % for shared calls),
 *and* each caller finds real variants the other misses: 43 true SVs are cuteSV-only on ONT and 77 are Sniffles2-only on HiFi
 (that is 14 % of all HiFi true positives). The two facts have opposite implications and both are real. For a production pipeline:
-the intersection is the high-precision set (FP ~2-5 %); the union adds 5-14 % recall at the price of a 25-59 % FP rate among the
-added calls, so the added calls need a second filter (support, size, repeat context) rather than being accepted as-is.
+the intersection is the high-precision set (FP ~2-5 %). Relative to the better single caller, adding the second caller is worth
+little: +16 true SVs (+2.8 %) with 23 false ones on ONT (Sniffles2-only calls added to cuteSV), +10 true (+1.8 %) with 4 false on
+HiFi (cuteSV-only added to Sniffles2); the large unique-true counts (43, 77) belong to the better caller and are already in it.
+Added calls carry a 25-59 % FP rate, so they need a second filter (support, size, repeat context) rather than being accepted as-is.
 Running one caller means accepting either the recall loss (cuteSV-only on HiFi is small, Sniffles2-only on HiFi is not) or the
 precision loss; on this evidence Sniffles2 alone is the better single choice on HiFi and cuteSV alone on ONT.
 
@@ -134,7 +139,7 @@ Recall by SV type and size bin, best caller per platform, default regime (TP / t
 | INS | 300-999 | **0.689** (111/161) | 0.671 (108/161) | +0.019 |
 | INS | 1-9.9 kb | **0.629** (44/70) | 0.614 (43/70) | +0.014 |
 | all DEL | | 0.780 | 0.764 | +0.016 |
-| all INS | | 0.683 | 0.653 | +0.029 |
+| all INS | | 0.682 | 0.653 | +0.029 |
 
 Precision by type: deletions ONT 0.943 / HiFi 0.946; insertions ONT 0.921 / HiFi 0.932. Table: `results/sv_platform_by_size.tsv`;
 figure 4.
@@ -146,13 +151,15 @@ deletions (18/19 vs 15/19). For insertions the expected HiFi advantage did not a
 or higher (all larger bins) and its insertion precision is only 1 point lower. The 10-50 kb class cannot be compared: the truth
 set has two such deletions in the BED and neither platform called either.
 
-The most likely explanation is that the premise is out of date for this ONT chemistry. The insertion advantage of HiFi comes
-from resolving the inserted sequence accurately enough for the caller to cluster reads and for Truvari's `--pctseq 0.7` to accept
-the allele. Dorado sup v5 reads in this set have a median per-read q-score around 27, and at that accuracy a 300 bp insertion
-assembled from 20-40 supporting reads meets the 70 % identity threshold as easily as a HiFi consensus does; what still decides
-recall is whether reads span the event and its flanking repeat, and there the 29 kb N50 wins. Consistent with this, the
-strict regime (90 % sequence identity) reduces ONT and HiFi insertion recall by the same amount, which would not happen if ONT
-insertion sequences were systematically worse. Two caveats: effective ONT depth was 2x lower than HiFi after re-alignment, so if
+The most likely explanation is that the premise is only partly out of date for this ONT chemistry. The insertion advantage of
+HiFi is supposed to come from resolving the inserted sequence accurately enough for the caller to cluster reads and for Truvari's
+`--pctseq 0.7` to accept the allele. At 70 % identity, a consensus over 20-40 Dorado sup v5 reads evidently clears the bar as often
+as a HiFi consensus does, and what then decides recall is whether reads span the event and its flanking repeat, where the 29 kb
+N50 wins. But the HiFi sequence-fidelity advantage is real and shows up as soon as the matching rule asks for it: under the strict
+regime (90 % sequence identity) ONT insertion recall falls 7.5 points (0.682 -> 0.608) against 5.1 for HiFi (0.653 -> 0.602), so the
+ONT lead shrinks from +2.9 to +0.6 points, and ONT insertion precision falls 10.1 points (0.921 -> 0.820) against 7.3 (0.932 -> 0.859).
+So: ONT finds at least as many insertions, HiFi describes the ones it finds more exactly. (Per-read accuracy was not measured in
+this project; no q-score statistic is claimed.) Two caveats: effective ONT depth was 2x lower than HiFi after re-alignment, so if
 anything the ONT margins are understated; and a single dataset per platform means the HiFi library (10 kb Pippin cut, 17 kb N50)
 is not the longest HiFi library one can make.
 
@@ -227,7 +234,7 @@ heterozygous variants for either platform to use.
 below 0.2 and 47.9 % above 0.8, with 10.9 % between 0.4 and 0.6. The distribution is strongly bimodal (figure 7), which is the
 first sanity check that the tags survived and modkit interpreted them correctly. Sites surviving each coverage threshold, unphased
 and per haplotype, are in `results/ont/methylation_site_counts.tsv`: at the chosen 5 reads per haplotype, 710,713 CpGs (93 % of
-the unphased set) are testable for allele-specific methylation; at 10 per haplotype it would be 640,464 and at 15 only 446,225,
+the 762,013 CpGs with any coverage; 96 % of the 743,745 at >= 10x) are testable for allele-specific methylation; at 10 per haplotype it would be 640,464 and at 15 only 446,225,
 which is why 5 was chosen (D-014).
 
 **By genomic context** (exclusive assignment, D-017; figure 8):
@@ -249,7 +256,7 @@ distance from the nearest protein-coding TSS: islands within 1 kb of a TSS avera
 
 ### The imprinted-locus control
 
-Known imprinted DMRs on chr20 (Akbari et al. 2022, hg38), unphased and split by the ONT haplotags; a DMR passes if it is 0.25-0.75
+Known imprinted DMRs on chr20 (Akbari et al. 2022, hg38), unphased and split by the ONT haplotags; a DMR passes (`control_pass`) if it is 0.25-0.75
 unphased and the haplotypes separate by >= 0.5 with one >= 0.7 and the other <= 0.3 (D-016):
 
 | DMR | Methylated allele | CpGs | Unphased | hp1 | hp2 | Separation | Sites significant | Pass |
@@ -259,14 +266,17 @@ unphased and the haplotypes separate by >= 0.5 with one >= 0.7 and the other <= 
 | L3MBTL1 | maternal | 83 | 0.47 | 0.54 | 0.46 | **0.08** | 0 % | **no** |
 | GNAS NESP55 | paternal | 251 | 0.63 | 0.12 | **0.97** | 0.85 | 96 % | yes |
 | GNAS NESP-AS / GNAS-AS1 | maternal | 123 | 0.30 | **0.47** | 0.09 | 0.37 | 39 % | weak |
-| GNAS-XL | maternal | 189 | 0.44 | **0.71** | 0.21 | 0.50 | 22 % | yes (borderline) |
+| GNAS-XL | maternal | 189 | 0.44 | **0.71** | 0.21 | 0.497 | 22 % | **no** (misses 0.50 by 0.003) |
 | GNAS exon 1A | maternal | 179 | 0.54 | **0.98** | 0.01 | 0.97 | 99 % | yes |
 
 Full table with the secondary annotations: `results/ont/imprinting_control.tsv`; figure 9 shows the GNAS cluster per CpG.
 
-The control does what it was designed to do. Every primary DMR is intermediate unphased (0.30-0.69), which no other class of
-region on chr20 is at this consistency, and five of the seven split cleanly into a near-fully-methylated and a near-unmethylated
-haplotype. The GNAS cluster is the strongest evidence that the phased pipeline is correct end to end: its three maternal DMRs
+The control does what it was designed to do, but the honest count is **four of seven passes**, not five: the criterion was fixed
+before the run (D-016) and GNAS-XL misses its separation threshold (0.497 vs 0.50), so it is scored as a failure here rather than
+rounded up. Every primary DMR is intermediate unphased (0.30-0.69), four split cleanly into a near-fully-methylated and a
+near-unmethylated haplotype, and six of the seven separate in the direction their parent of origin predicts. (The annotation also
+contains an eighth GNAS-class entry, a 460 bp, 5-CpG region reported by one study only; it separates 0.34 vs 0.84 and also fails the
+0.3 bound. It is listed in `imprinting_control.tsv` and left out of the table for its size.) The GNAS cluster is the strongest evidence that the phased pipeline is correct end to end: its three maternal DMRs
 (NESP-AS, XL, exon 1A) are all methylated on haplotype 1 and the paternal NESP55 DMR is methylated on haplotype 2, inside a single
 274 kb phase block, which is the parent-of-origin structure of the locus recovered without any pedigree information. NESP-AS is
 hypomethylated overall in this sample (0.30 unphased, 0.47 on the methylated allele), a partial loss of the maternal mark that is
@@ -328,7 +338,7 @@ Which platform for which application, on this evidence (one sample, chr20, match
   HiFi or should treat ONT homopolymer indels as low confidence.
 - **Phasing: ONT.** 2.1 Mb vs 0.53 Mb block N50 with a three-fold lower switch-error rate; HiFi phases a few percent more of the
   heterozygous sites and assigns 10 % more reads, which matters for per-site power but not for haplotype continuity.
-- **Methylation: ONT works and was validated here; HiFi was not run.** The imprinting control passes at five of seven loci with the
+- **Methylation: ONT works and was validated here; HiFi was not run.** The imprinting control passes at four of seven loci (six of seven in direction) with the
   GNAS cluster internally consistent. Revio reads carry 5mC tags and, given HiFi's higher haplotag rate, the same analysis would be
   expected to work with shorter phase blocks; that is an expectation, not a measurement.
 

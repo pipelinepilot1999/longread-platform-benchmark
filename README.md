@@ -13,8 +13,9 @@ and the expected split by SV class only half appears: ONT recall is equal or hig
 deletion bin above 100 bp, HiFi wins only 50-99 bp deletions (0.77 vs 0.71) and precision (0.94 vs 0.93). Where the platforms
 really separate is small indels and phasing: HiFi indel F1 0.87 vs ONT 0.75 (in homopolymers >= 12 bp, 0.71 vs 0.40) while
 SNV F1 is 0.996 vs 0.993, and ONT read length turns into 2.1 Mb phase blocks against 0.53 Mb for HiFi with a lower switch
-error (0.07 % vs 0.22 %). ONT phased methylation recovers the imprinting signature at five of seven known chr20 DMRs cleanly
-(GNAS cluster internally consistent: maternal DMRs on one haplotype, the paternal NESP55 DMR on the other); the one clear
+error (0.07 % vs 0.22 %). ONT phased methylation recovers the imprinting signature at four of seven known chr20 DMRs under the pre-stated pass
+criterion and at six of seven in direction (GNAS-XL misses the 0.50 separation threshold at 0.497, NESP-AS separates weakly;
+GNAS cluster internally consistent: maternal DMRs on one haplotype, the paternal NESP55 DMR on the other); the one clear
 failure, L3MBTL1, is a run of homozygosity where read-based phasing has nothing to phase.
 
 ## Scope, stated plainly
@@ -23,7 +24,7 @@ failure, L3MBTL1, is a run of homozygosity where read-based phasing has nothing 
 - **Reads were pre-selected by their original chr20 alignment** in the public BAMs (ONT: Dorado's minimap2 2.24; HiFi: pbmm2 1.10), converted back to FASTQ and re-aligned against the full GRCh38 with minimap2 2.30. Reads that would only reach chr20 after re-alignment are excluded; reads that originally landed on chr20 but belong elsewhere are removed by the re-alignment (the fraction that stays on chr20 is reported).
 - **Same individual on both platforms:** HG002 (NIST RM 8391/8392, Coriell NA24385). Sample identity was checked from read-group / run metadata, not filenames.
 - **Coverage matching:** native chr20 coverage was computed for each platform (total bases of primary chr20 reads / 64,444,167 bp); the deeper platform was downsampled to the shallower one on the FASTQ before alignment (`seqkit sample`, fixed seed). Native and matched coverages are in `results/qc_summary.tsv`.
-- **Methylation was run on ONT only, by design.** The Revio reads carry 5mC tags too; the ONT modified-base ecosystem is the more established one and running the arm twice adds disk and complexity without a new finding (D-014). It is a scoping decision, not an oversight.
+- **Methylation was run on ONT only, by design.** The Revio reads carry 5mC tags too; the ONT modified-base ecosystem is the more established one and running the arm twice adds disk and complexity without a new finding (D-023). It is a scoping decision, not an oversight.
 - **No basecalling.** Pre-basecalled reads with existing modified-base tags were used on both platforms.
 - **One dataset per platform**, so platform differences are confounded with the specific library, flow cell / SMRT cell, basecaller and run.
 
@@ -37,7 +38,7 @@ failure, L3MBTL1, is a run of homozygosity where read-based phasing has nothing 
 | Sample identity (metadata) | `@RG SM:hg002 LB:hg002` | `@RG SM:HG002 LB:NIST HG002`, README: RM 8392 |
 | Native chr20 coverage | 54.6x | 49.6x |
 | Matched coverage | 49.6x | 49.6x |
-| Read N50 (analysed reads) | {{ONT_N50}} bp | {{HIFI_N50}} bp |
+| Read N50 (analysed reads) | 29,418 bp | 17,394 bp |
 
 Reference: `GCA_000001405.15_GRCh38_no_alt_analysis_set` (the chr20 MD5 matches the ONT alignment headers).
 Truth: GIAB **v5.0q** for SVs (`stvar`) and for phased small variants (`smvar`), both GRCh38, both from the
@@ -50,8 +51,8 @@ Nextflow DSL2, one Docker image per tool, every version pinned (`versions.yml`, 
 One platform per run, then a comparison entry:
 
 ```bash
-scripts/run_platform.sh ont  data/ont_chr20.raw.bam  --target_cov 49.6
-scripts/run_platform.sh hifi data/hifi_chr20.raw.bam --target_cov 49.6
+scripts/run_platform.sh ont  data/ont_chr20.raw.bam  --target_cov 49.61
+scripts/run_platform.sh hifi data/hifi_chr20.raw.bam --target_cov 49.61
 nextflow run main.nf --stage compare --best_caller.ont cutesv --best_caller.hifi sniffles
 ```
 
@@ -59,10 +60,15 @@ nextflow run main.nf --stage compare --best_caller.ont cutesv --best_caller.hifi
 main.nf, nextflow.config
 modules/   minimap2_align  qc_stats  sniffles  cutesv  truvari_bench  small_variants  phasing  haplotag  modkit_pileup  asm_analysis
 containers/ Dockerfile.{minimap2,sniffles,cutesv,truvari,variantcall,happy,phasing,modkit,analysis}
-scripts/   build_strata.py qc_summary.py sv_summary.py smallvar_summary.py phasing_summary.py methylation_analysis.py platform_compare.py
-results/   qc_summary.tsv sv_benchmark.tsv sv_concordance.tsv sv_platform_by_size.tsv smallvar_benchmark.tsv phasing_stats.tsv
-           methylation_by_context.tsv asm_sites.tsv imprinting_control.tsv cross_arm.tsv figures/
-docs/      results.md decisions.md limitations.md
+scripts/   build_strata.py qc_summary.py sv_summary.py sv_common.py smallvar_summary.py phasing_summary.py methylation_analysis.py
+           platform_compare.py headline_numbers.py build_interview_guide.py run_platform.sh build_containers.sh check_disk.sh
+results/   qc_summary.tsv sv_benchmark.tsv sv_concordance.tsv sv_platform_by_size.tsv platform_concordance.tsv
+           smallvar_benchmark.tsv phasing_stats.tsv cross_arm.tsv figures/            (both platforms merged)
+results/ont/   methylation_by_context.tsv methylation_global.tsv methylation_site_counts.tsv asm_sites.tsv asm_regions.tsv
+               imprinting_control.tsv figures/   (Arm C is ONT-only, so its tables live under the ONT run)
+results/{ont,hifi}/   per-platform tables, qc/, phasing/, happy/, truvari/ summaries and the recorded tool commands (*.cmd)
+docs/      results.md decisions.md limitations.md validation.md interview-guide.pdf
+tests/     test_docs_match_results.py   (`make test`: docs and README are checked against results/ and the code)
 ```
 
 ### The MM/ML tag-preservation handling
@@ -91,7 +97,7 @@ v5.0q with homopolymer stratifications, WhatsHap 2.8 phasing/haplotagging, switc
 modkit 0.6.4 CpG pileups, unphased and partitioned by the WhatsHap haplotag; global distribution, genomic
 context, per-CpG allele-specific methylation (Fisher exact, BH-FDR), and the **imprinted-locus control**:
 GNAS cluster, L3MBTL1, NNAT and MCTS2P must be ~50 % methylated unphased and split cleanly by haplotype.
-Result: five of seven primary-control DMRs pass cleanly, NESP-AS separates weakly in the right direction, and L3MBTL1 cannot be separated because HG002 carries no heterozygous variant within 45 kb of it (see `docs/results.md` section 4 and `docs/validation.md`).
+Result: four of seven primary-control DMRs pass the pre-stated criterion (`control_pass` in `results/ont/imprinting_control.tsv`); GNAS-XL misses it by a hair (separation 0.497 against a 0.50 threshold), NESP-AS separates weakly in the right direction, and L3MBTL1 cannot be separated because HG002 carries no heterozygous variant within 45 kb of it (see `docs/results.md` section 4 and `docs/validation.md`).
 
 ## What this project does not do
 No basecalling or signal-level work; no methylation on HiFi (ONT-only by design); no genome assembly; no
@@ -103,3 +109,7 @@ Images were built on the EC2 host and not pushed to ECR (no credentials on the h
 Environment: EC2 r5.2xlarge (8 vCPU, 62 GB), Docker, Nextflow 26.04. Slice the public BAMs
 (`samtools view -b -X <bam_url> <bai_url> chr20`), place the reference and resources as in
 `nextflow.config`, build images with `scripts/build_containers.sh`, run the three commands above.
+
+Offline, from a clone, with no data and no network: `make test` (checks every documented number against `results/`),
+`make numbers` (prints the headline numbers from the result tables) and `make guide` (rebuilds `docs/interview-guide.pdf`).
+The pipeline itself cannot be re-run from a clone alone: BAMs, VCFs and the reference are not in the repository.

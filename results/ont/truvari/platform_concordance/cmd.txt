@@ -1,0 +1,1 @@
+base=ont:cutesv comp=hifi:sniffles regime=default

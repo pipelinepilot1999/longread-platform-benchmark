@@ -1,0 +1,1 @@
+truvari bench --includebed truth_sv.chr20.bed --passonly --sizemin 50 --sizefilt 30 --refdist 500 --pctseq 0.7 --pctsize 0.7
