@@ -1,7 +1,7 @@
 # Results: ONT vs PacBio HiFi on HG002 chr20
 
 **Summary.** On HG002 chr20 at a matched 49.6x, Oxford Nanopore (R10.4.1, Dorado sup v5.0.0) and PacBio Revio HiFi
-reach almost the same structural-variant accuracy against GIAB v5.0q (best-caller F1 0.81 vs 0.79, Truvari default regime),
+reach almost the same structural-variant accuracy against GIAB v5.0q (best-caller F1 0.81 vs 0.79, Truvari default regime; 0.87 vs 0.85 with `--pick ac`, see the sensitivity analysis in section 2),
 and the expected split by SV class only half appears: ONT recall is equal or higher in every insertion size bin and in every
 deletion bin above 100 bp, HiFi wins only 50-99 bp deletions (0.77 vs 0.71) and precision (0.94 vs 0.93). Where the platforms
 really separate is small indels and phasing: HiFi indel F1 0.87 vs ONT 0.75 (in homopolymers >= 12 bp, 0.71 vs 0.40) while
@@ -71,19 +71,45 @@ Regimes (D-010): permissive `--refdist 1000 --pctseq 0 --pctsize 0.5 --typeignor
 strict `--refdist 100 --pctseq 0.9 --pctsize 0.9`. All: `--includebed`, `--passonly`, `--sizemin 50 --sizefilt 30`, sizemax 50 kb.
 
 The best caller differs by platform: **cuteSV on ONT** (F1 0.807) and **Sniffles2 on HiFi** (0.793); those two are used for
-the platform comparison. cuteSV on HiFi is the outlier (recall 0.61): with the README's HiFi clustering parameters it misses 36 of the 70 truth
-insertions >= 1 kb (recall 0.49), against 27 missed by Sniffles2 on the same BAM (0.61); the likely mechanism, aggressive merging
-of insertion signatures in tandem repeats, was not tested directly.
+the platform comparison. cuteSV on HiFi is the outlier (recall 0.61): it is scored as missing 36 of the 70 truth insertions >= 1 kb (recall 0.49),
+against 27 for Sniffles2 on the same BAM (0.61). An earlier draft blamed aggressive merging in tandem repeats; the audit tested
+that and it is wrong (`results/audit_cutesv_hifi_missed_ins.tsv`). At 22 of the 36, the truth set lists two records at the locus
+(one per haplotype, `1/0` and `0/1`, near-identical sequence), cuteSV made one correct PASS call (sequence similarity 0.63-0.999,
+median 0.94), and Truvari's default `--pick single` let that call match only one of the two records; the twin is counted as a
+miss. Sniffles2 more often emits two calls at such loci. Only 14 of the 36 have no cuteSV call within 1 kb, and 20 of the 36 are
+also missed by Sniffles2. With `--pick ac`, 18 of the 36 are recovered.
 
 The numbers move between regimes for two different reasons. Going from default to strict costs 5-8 points of recall and 6-14
 points of precision on every caller/platform, and the loss is concentrated in insertions inside tandem repeats: the call is
 the right event with the right size but its breakpoint is placed a few hundred bp away or its inserted sequence shares < 90 %
 identity with the assembly-derived truth allele, so under strict matching a true call becomes an FP + FN pair. Going from
 default to permissive recovers 1.5-4 points of recall (breakpoint distance up to 1 kb, no sequence requirement) and 2-5 points of
-precision; the remaining 26-38 % of truth SVs that are missed even permissively (26-28 % without the HiFi cuteSV outlier) are
-genuinely uncalled, not mis-matched.
+precision. The remaining 26-38 % of truth SVs that are missed even permissively are **not** all genuinely uncalled: the
+sensitivity analysis below shows that about 40 % of them are the second truth record of a locus that was called once.
 The platform gap is stable across regimes (ONT-cuteSV minus HiFi-Sniffles2: +1.1, +1.4, -0.5 F1 points), so the conclusion
 does not depend on the matching definition.
+
+### Sensitivity analysis: `--pick ac` (added in the 2026-09-18 audit)
+
+The v5.0q truth is assembly-based and frequently encodes one locus as two heterozygous records, one per haplotype. Truvari's
+default `--pick single` allows each call to match one truth record, so a single correct (typically `1/1`) call leaves the twin
+record as a false negative. The v5.0q README recommends `--pick ac`, which lets a call match as many truth records as its allele
+count. The pre-specified analysis above used the default; re-running all twelve benchmarks with `--pick ac` and nothing else
+changed (`scripts/truvari_pick_ac.sh`, `results/sv_benchmark_pick_ac.tsv`) gives, for the default regime:
+
+| Platform | Caller | Recall `single` -> `ac` | Precision | F1 `single` -> `ac` |
+|---|---|---|---|---|
+| ONT | cuteSV | 0.713 -> **0.825** | 0.929 | 0.807 -> **0.874** |
+| ONT | Sniffles2 | 0.680 -> 0.772 | 0.918 | 0.781 -> 0.838 |
+| HiFi | cuteSV | 0.607 -> 0.739 | 0.974 | 0.748 -> 0.841 |
+| HiFi | Sniffles2 | 0.688 -> **0.786** | 0.936 | 0.793 -> **0.854** |
+
+Recall rises 9-13 points for every caller on both platforms and precision does not move (the calls are the same; only the number
+of truth records each may claim changes). The conclusions survive: the best caller per platform is unchanged, ONT stays slightly
+ahead (F1 +2.0 points instead of +1.4), and the cuteSV deficit on HiFi shrinks from 4.5 to 1.3 F1 points. What does not survive is
+the reading that a third of chr20's benchmark SVs go undetected: **of the 230 truth SVs ONT cuteSV "misses" under the default, 90
+are twins of a locus it called.** The size-stratified, concordance and cross-arm tables in this document are all from the
+pre-specified `--pick single` runs; their recall values are pessimistic by roughly this amount, equally for both platforms.
 
 ### Caller concordance within each platform
 

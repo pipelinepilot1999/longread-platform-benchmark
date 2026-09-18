@@ -15,14 +15,14 @@ taken. "Effect on results" was filled in once the relevant stage had run.
 **Alternatives considered:** `NIST_SV_v0.6` (Tier 1, 2019) — GRCh37 only, so it cannot be used with GRCh38 reads without lifting over. `CMRG_v1.00` SV benchmark — GRCh38 but restricted to 273 medically relevant genes (few on chr20). `NISTv4.2.1` small variants — GRCh38, mapping-based, the copy on the host carries no phasing (0 `|` genotypes on chr20), so it cannot score switch errors. Q100 `T2TQ100-V1.1` — not present on the GIAB FTP any more; v5.0q is its successor.
 **Reasoning:** v5.0q is the only current GIAB release that provides SV and small-variant benchmarks on the same build from the same underlying assembly, and its small-variant VCF is phased chromosome-wide (assembly haplotypes), which is exactly what switch-error scoring needs. It is labelled a *draft* by GIAB; that is recorded in the limitations.
 **Source:** GIAB FTP listing surveyed 2026-09-04; `NIST_HG002_v5.0q_variant-benchmarksets_README.md`.
-**Effect on results:** chr20 SV truth after filtering: 610 DEL and 1,102 INS of >= 50 bp (mostly INS 300-999 bp); benchmark BED covers 58.6 Mb of chr20 (214 regions).
+**Effect on results:** chr20 SV truth after `ALT=*` removal: 1,624 SVs of >= 50 bp, of which 1,620 are 50 bp-50 kb (519 DEL, 1,101 INS; `results/audit_truth_counts.tsv`); benchmark BED covers 58.6 Mb of chr20 (214 regions). (An earlier version of this entry gave 610 DEL / 1,102 INS, a count taken from the SVLEN annotations of the unfiltered file.)
 
 ### D-003: Truth-set filtering
 **Chose:** SV truth: chr20 records with `ALT="*"` removed (11,595 on chr20). Small-variant truth: chr20 records with FILTER `.` only; records flagged `HET1/HET2/GAP1/GAP2` (assembly heterozygous/gapped, ~60k of 180k chr20 records) dropped.
 **Alternatives considered:** use the VCFs as released and rely on the benchmark BED alone; keep flagged records.
 **Reasoning:** the v5.0q README states truvari bench mis-categorises `ALT=*` records and recommends removing them. The HET/GAP flags mark places where the Q100 assembly itself is ambiguous; keeping them would score calls against uncertain truth and would inject unphased/inconsistent genotypes into the switch-error comparison. The BED already excludes most of them.
 **Source:** v5.0q README; own judgment for the FILTER rule.
-**Effect on results:** chr20 small-variant truth after the FILTER rule: 120,027 records (72,728 heterozygous); 60k flagged records dropped. SV truth inside the BED: 802 SVs of 50 bp-50 kb (254 DEL, 548 INS), half of the 1,620 such SVs on chr20; the excluded half is not scored and this is stated in the results. The with/without comparison was not run (time).
+**Effect on results:** chr20 small-variant truth after the FILTER rule: 120,027 records (72,728 heterozygous); 60k flagged records dropped. SV truth inside the BED: 802 SVs of 50 bp-50 kb (254 DEL, 548 INS), half of the 1,620 such SVs on chr20; the excluded half is not scored and this is stated in the results. The with/without comparison was not run (time). All counts in this entry were re-derived in the 2026-09-18 audit (`scripts/audit_recounts.py`, `results/audit_truth_counts.tsv`).
 
 ### D-004: ONT dataset
 **Chose:** ONT open data `giab_2025.01`, HG002 flowcell **PAW70337**, `basecalling/sup/HG002/PAW70337/calls.sorted.bam`: PromethION 48 (PC48LILITH), FLO-PRO114M R10.4.1, SQK-LSK114, run 2024-06-19, Dorado `dna_r10.4.1_e8.2_400bps_sup@v5.0.0` with modified-base model `5mC_5hmC@v2.0.1`. Read group `SM:hg002 LB:hg002`. MM/ML present on 111/111 inspected chr20 records. Yield 152.8 Gb basecalled (about 49x raw).
@@ -64,7 +64,7 @@ taken. "Effect on results" was filled in once the relevant stage had run.
 **Alternatives considered:** cuteSV defaults (tuned for neither platform); Sniffles `--mosaic`; a minimum SV length of 30 bp.
 **Reasoning:** the documented recommendations are the only defensible choice for a benchmark; 50 bp is the GIAB/Truvari convention for "structural".
 **Source:** Sniffles2 and cuteSV READMEs.
-**Effect on results:** calls inside the BED (default regime): ONT Sniffles2 594 / cuteSV 616, HiFi Sniffles2 590 / cuteSV 500. The cuteSV HiFi parameters cost recall (0.61 vs 0.69 for Sniffles2 on the same BAM), mostly insertions >= 1 kb in tandem repeats; the ONT parameters made cuteSV the better ONT caller (F1 0.807 vs 0.781).
+**Effect on results:** calls inside the BED (default regime): ONT Sniffles2 594 / cuteSV 616, HiFi Sniffles2 590 / cuteSV 500. cuteSV scores lower recall on HiFi (0.61 vs 0.69 for Sniffles2 on the same BAM), mostly insertions >= 1 kb; the audit showed that 22 of those 36 'misses' are loci with two truth records and one correct cuteSV call (a `--pick single` artifact, D-024), not a parameter effect; the ONT parameters made cuteSV the better ONT caller (F1 0.807 vs 0.781).
 
 ### D-010: Truvari regimes
 **Chose:** three regimes, all with `--includebed <v5.0q stvar BED> --passonly --sizemin 50 --sizefilt 30` and the default `--sizemax 50000`:
@@ -163,3 +163,10 @@ permissive `--refdist 1000 --pctseq 0 --pctsize 0.5 --typeignore`; default `--re
 **Reasoning:** spec section 3 scopes it this way: the analysis is structurally identical once tags are in hand, so a second run adds disk and runtime without a new finding. What is lost is a cross-platform methylation concordance, which would have been a finding; that is recorded in the limitations.
 **Source:** spec section 3; own judgment on the cost.
 **Effect on results:** no HiFi methylation numbers exist anywhere in this repository; every statement about HiFi methylation in the results is an expectation, not a measurement.
+
+### D-024: `--pick ac` reported as a sensitivity analysis, not as the new headline
+**Chose:** keep the pre-specified Truvari runs (`--pick single`, the tool default) as the primary analysis and add a second full set of twelve benchmarks with `--pick ac` (`scripts/truvari_pick_ac.sh`, `results/sv_benchmark_pick_ac.tsv`, `results/*/truvari_pick_ac/`).
+**Alternatives considered:** replacing the headline numbers with the `--pick ac` ones; ignoring the finding.
+**Reasoning:** the audit of cuteSV's 36 'missed' HiFi insertions >= 1 kb found that 22 were loci the truth set encodes as two heterozygous records, called once and correctly. The v5.0q README recommends `--pick ac` for this reason, and D-010 had rejected that recipe together with `--refine` although only `--refine` breaks per-call traceability. Swapping the headline after seeing the result would be choosing the analysis by its outcome; hiding it would misstate recall by ~10 points. Reporting both, with the reason, is the defensible option. The size-stratified, concordance and cross-arm tables were not recomputed under `--pick ac`.
+**Source:** `results/audit_cutesv_hifi_missed_ins.tsv`; GIAB v5.0q README.
+**Effect on results:** default-regime recall 0.713 -> 0.825 (ONT cuteSV), 0.680 -> 0.772 (ONT Sniffles2), 0.607 -> 0.739 (HiFi cuteSV), 0.688 -> 0.786 (HiFi Sniffles2); precision unchanged; best caller per platform and the sign of the platform gap unchanged (F1 0.874 vs 0.854).

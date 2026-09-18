@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Single source of truth for every number quoted in README.md, docs/ and the interview guide.
+"""Single source of truth for every number quoted in README.md and docs/.
 
 Reads only files committed under results/ (standard library only, so it runs on any machine with
-python3 and no network). Used by tests/test_docs_match_results.py, by scripts/build_interview_guide.py
-and by `make numbers`.
+python3 and no network). Used by tests/test_docs_match_results.py and by `make numbers`.
 """
 import csv, json, os
 
@@ -34,6 +33,10 @@ def load():
     n['sv_by_size'] = {(r['svtype'], r['size_bin']): r for r in tsv('sv_platform_by_size.tsv')}
     with open(os.path.join(R, 'ont', 'truvari', 'platform_concordance', 'summary.json')) as fh:
         n['platform_truvari'] = json.load(fh)
+    # ---- audit artefacts (2026-09-18): --pick ac sensitivity runs and recounts from the uncommitted VCFs
+    n['sv_ac'] = {(r['platform'], r['caller'], r['regime']): r for r in tsv('sv_benchmark_pick_ac.tsv')}
+    n['audit'] = {r['quantity']: r['value'] for r in tsv('audit_truth_counts.tsv')}
+    n['cutesv_missed'] = tsv('audit_cutesv_hifi_missed_ins.tsv')
     # ---- small variants
     n['smallvar'] = {(r['platform'], r['type'], r['stratum']): r for r in tsv('smallvar_benchmark.tsv')}
     # ---- phasing
@@ -75,6 +78,13 @@ def f1(n, platform, regime='default', caller=None, svtype='ALL', size='ALL', fie
     return float(r[field])
 
 
+def ac(n, platform, caller=None, regime='default', field='recall'):
+    """--pick ac sensitivity run; rates recomputed from counts (the TSV's 4-decimal 0.7855 would double-round to 0.785)."""
+    r = n['sv_ac'][(platform, caller or BEST[platform], regime)]
+    rc = int(r['tp_base']) / (int(r['tp_base']) + int(r['fn'])); pr = int(r['tp_comp']) / (int(r['tp_comp']) + int(r['fp']))
+    return {'recall': rc, 'precision': pr, 'f1': 2 * pr * rc / (pr + rc)}[field]
+
+
 def headline(n=None):
     """The flat list of (label, formatted value) pairs that README, results.md and the guide must agree on."""
     n = n or load()
@@ -87,10 +97,14 @@ def headline(n=None):
         ('truth SVs in benchmark BED (all / DEL / INS)', ' / '.join(str(n['sv_truth_in_bed'][t]) for t in ('ALL', 'DEL', 'INS'))),
         ('SV F1 default, ONT cuteSV / HiFi Sniffles2', f"{f1(n,'ont'):.3f} / {f1(n,'hifi'):.3f}"),
         ('SV recall default, ONT / HiFi', f"{f1(n,'ont',field='recall'):.3f} / {f1(n,'hifi',field='recall'):.3f}"),
+        ('SV recall default with --pick ac, ONT / HiFi', f"{ac(n,'ont'):.3f} / {ac(n,'hifi'):.3f}"),
+        ('SV F1 default with --pick ac, ONT / HiFi', f"{ac(n,'ont',field='f1'):.3f} / {ac(n,'hifi',field='f1'):.3f}"),
         ('SV precision default, ONT / HiFi', f"{f1(n,'ont',field='precision'):.3f} / {f1(n,'hifi',field='precision'):.3f}"),
         ('DEL 50-99 bp recall ONT / HiFi', f"{f1(n,'ont',svtype='DEL',size='50-99',field='recall'):.3f} / {f1(n,'hifi',svtype='DEL',size='50-99',field='recall'):.3f}"),
         ('INS recall default -> strict, ONT', f"{f1(n,'ont',svtype='INS',field='recall'):.3f} -> {f1(n,'ont','strict',svtype='INS',field='recall'):.3f}"),
         ('INS recall default -> strict, HiFi', f"{f1(n,'hifi',svtype='INS',field='recall'):.3f} -> {f1(n,'hifi','strict',svtype='INS',field='recall'):.3f}"),
+        ('chr20 truth SVs 50 bp-50 kb (all / DEL / INS)', f"{int(n['audit']['truth_sv_chr20_50bp_50kb_all']):,} / {n['audit']['truth_sv_chr20_50bp_50kb_DEL']} / {int(n['audit']['truth_sv_chr20_50bp_50kb_INS']):,}"),
+        ('truth hets within 45 kb of L3MBTL1 DMR / nearest', f"{n['audit']['truth_het_within_45kb_of_L3MBTL1_DMR']} / {int(n['audit']['nearest_truth_het_left_of_L3MBTL1_DMR_distance_bp'])/1000:.1f} kb"),
         ('SNV F1 ONT / HiFi', f"{float(s[('ont','SNP','*')]['f1']):.4f} / {float(s[('hifi','SNP','*')]['f1']):.4f}"),
         ('indel F1 ONT / HiFi', f"{float(s[('ont','INDEL','*')]['f1']):.3f} / {float(s[('hifi','INDEL','*')]['f1']):.3f}"),
         ('indel F1 in homopolymers >= 12 bp ONT / HiFi', f"{float(s[('ont','INDEL','homopolymer_ge12')]['f1']):.3f} / {float(s[('hifi','INDEL','homopolymer_ge12')]['f1']):.3f}"),

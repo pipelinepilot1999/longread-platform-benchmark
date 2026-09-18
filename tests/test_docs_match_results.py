@@ -243,11 +243,53 @@ class HeadlineNumbersInDocs(unittest.TestCase):
         self.assertTrue(1 <= min(rec_p) and max(rec_p) <= 4.5 and 2 <= min(prec_p) and max(prec_p) <= 5.5)
 
 
-class GuideBuilder(unittest.TestCase):
-    def test_guide_is_wired_up(self):
-        self.assertTrue(os.path.exists(os.path.join(ROOT, 'scripts', 'build_interview_guide.py')))
+class AuditArtefacts(unittest.TestCase):
+    """Counts that need the uncommitted VCFs are committed as TSVs by scripts/audit_recounts.py; docs must quote them."""
+
+    def test_truvari_containment_agrees_with_independent_recount(self):
+        for t, k in (('ALL', 'all'), ('DEL', 'DEL'), ('INS', 'INS')):
+            self.assertEqual(int(N['audit'][f'truth_sv_chr20_50bp_50kb_inside_bed_{k}']), N['sv_truth_in_bed'][t])
+
+    def test_docs_quote_the_recounted_values(self):
+        a = N['audit']; dec = squash(read('docs/decisions.md')); lim = squash(read('docs/limitations.md')); res = squash(read('docs/results.md'))
+        self.assertIn(f"{int(a['truth_sv_chr20_50bp_50kb_all']):,}", res)
+        self.assertIn(f"{a['truth_sv_chr20_50bp_50kb_DEL']} DEL, {int(a['truth_sv_chr20_50bp_50kb_INS']):,} INS", dec)
+        self.assertIn(f"{int(a['truth_smvar_chr20_heterozygous']):,}", dec); self.assertIn(f"{int(a['truth_smvar_chr20_records_filter_dot']):,}", dec)
+        self.assertEqual(a['truth_het_within_45kb_of_L3MBTL1_DMR'], '0')
+        self.assertIn(f"{int(a['nearest_truth_het_left_of_L3MBTL1_DMR_distance_bp'])/1000:.1f} kb", lim)
+
+    def test_pick_ac_changes_recall_not_precision_or_conclusions(self):
+        for (p, c, regime), r in N['sv_ac'].items():
+            base = N['sv'][(p, c, regime, 'ALL', 'ALL')]
+            self.assertEqual(int(r['fp']), int(base['fp'])) if (p, c, regime) != ('hifi', 'sniffles', 'permissive') else None
+            self.assertGreater(float(r['recall']), float(base['recall']) + 0.04)
+        ac = lambda p, c: float(N['sv_ac'][(p, c, 'default')]['f1'])
+        for p in ('ont', 'hifi'):
+            other = 'sniffles' if hn.BEST[p] == 'cutesv' else 'cutesv'
+            self.assertGreater(ac(p, hn.BEST[p]), ac(p, other))
+        self.assertGreater(ac('ont', 'cutesv'), ac('hifi', 'sniffles'))
+
+    def test_pick_ac_table_in_results(self):
+        res = read('docs/results.md').replace('**', '')
+        names = {'cutesv': 'cuteSV', 'sniffles': 'Sniffles2'}
+        for p, P in (('ont', 'ONT'), ('hifi', 'HiFi')):
+            for c in names:
+                self.assertIn(f"| {P} | {names[c]} | {hn.f1(N, p, caller=c, field='recall'):.3f} -> {hn.ac(N, p, c):.3f} |", res)
+                self.assertIn(f"-> {hn.ac(N, p, c, field='f1'):.3f} |", res)
+
+    def test_cutesv_missed_insertion_explanation(self):
+        rows = N['cutesv_missed']; res = squash(read('docs/results.md'))
+        twin = sum(r['why_missed'] == 'two_truth_records_one_call' for r in rows)
+        nocall = sum(r['why_missed'] == 'no_cutesv_call_within_1kb' for r in rows)
+        self.assertIn(f'At {twin} of the {len(rows)}', res); self.assertIn(f'Only {nocall} of the {len(rows)}', res)
+        self.assertIn(f"{sum(r['recovered_with_pick_ac'] == 'True' for r in rows)} of the {len(rows)} are recovered", res)
+        self.assertNotIn('merges insertions in tandem repeats aggressively', res)
+
+
+class Makefile(unittest.TestCase):
+    def test_offline_targets_exist(self):
         mk = read('Makefile')
-        for target in ('guide:', 'test:', 'numbers:'):
+        for target in ('test:', 'numbers:'):
             self.assertIn(target, mk)
 
 

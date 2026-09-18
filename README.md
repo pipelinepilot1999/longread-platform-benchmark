@@ -8,7 +8,7 @@ matching regime, coverage and truth set that produced it, and every parameter ch
 `docs/decisions.md`.
 
 **Summary.** On HG002 chr20 at a matched 49.6x, Oxford Nanopore (R10.4.1, Dorado sup v5.0.0) and PacBio Revio HiFi
-reach almost the same structural-variant accuracy against GIAB v5.0q (best-caller F1 0.81 vs 0.79, Truvari default regime),
+reach almost the same structural-variant accuracy against GIAB v5.0q (best-caller F1 0.81 vs 0.79, Truvari default regime; 0.87 vs 0.85 with `--pick ac`, see the sensitivity analysis in `docs/results.md`),
 and the expected split by SV class only half appears: ONT recall is equal or higher in every insertion size bin and in every
 deletion bin above 100 bp, HiFi wins only 50-99 bp deletions (0.77 vs 0.71) and precision (0.94 vs 0.93). Where the platforms
 really separate is small indels and phasing: HiFi indel F1 0.87 vs ONT 0.75 (in homopolymers >= 12 bp, 0.71 vs 0.40) while
@@ -61,13 +61,14 @@ main.nf, nextflow.config
 modules/   minimap2_align  qc_stats  sniffles  cutesv  truvari_bench  small_variants  phasing  haplotag  modkit_pileup  asm_analysis
 containers/ Dockerfile.{minimap2,sniffles,cutesv,truvari,variantcall,happy,phasing,modkit,analysis}
 scripts/   build_strata.py qc_summary.py sv_summary.py sv_common.py smallvar_summary.py phasing_summary.py methylation_analysis.py
-           platform_compare.py headline_numbers.py build_interview_guide.py run_platform.sh build_containers.sh check_disk.sh
+           platform_compare.py headline_numbers.py run_platform.sh build_containers.sh check_disk.sh
 results/   qc_summary.tsv sv_benchmark.tsv sv_concordance.tsv sv_platform_by_size.tsv platform_concordance.tsv
            smallvar_benchmark.tsv phasing_stats.tsv cross_arm.tsv figures/            (both platforms merged)
 results/ont/   methylation_by_context.tsv methylation_global.tsv methylation_site_counts.tsv asm_sites.tsv asm_regions.tsv
                imprinting_control.tsv figures/   (Arm C is ONT-only, so its tables live under the ONT run)
 results/{ont,hifi}/   per-platform tables, qc/, phasing/, happy/, truvari/ summaries and the recorded tool commands (*.cmd)
-docs/      results.md decisions.md limitations.md validation.md interview-guide.pdf
+docs/      results.md decisions.md limitations.md validation.md
+scripts/audit_recounts.py and scripts/truvari_pick_ac.sh re-derive, on the host, the counts and the sensitivity analysis that need the uncommitted VCFs
 tests/     test_docs_match_results.py   (`make test`: docs and README are checked against results/ and the code)
 ```
 
@@ -110,6 +111,6 @@ Environment: EC2 r5.2xlarge (8 vCPU, 62 GB), Docker, Nextflow 26.04. Slice the p
 (`samtools view -b -X <bam_url> <bai_url> chr20`), place the reference and resources as in
 `nextflow.config`, build images with `scripts/build_containers.sh`, run the three commands above.
 
-Offline, from a clone, with no data and no network: `make test` (checks every documented number against `results/`),
-`make numbers` (prints the headline numbers from the result tables) and `make guide` (rebuilds `docs/interview-guide.pdf`).
+Offline, from a clone, with no data and no network: `make test` (checks every documented number against `results/`)
+and `make numbers` (prints the headline numbers from the result tables).
 The pipeline itself cannot be re-run from a clone alone: BAMs, VCFs and the reference are not in the repository.

@@ -1,0 +1,13 @@
+platform	caller	regime	tp_base	tp_comp	fp	fn	precision	recall	f1
+ont	cutesv	permissive	690	595	21	112	0.9659	0.8603	0.9101
+ont	cutesv	default	662	572	44	140	0.9286	0.8254	0.874
+ont	cutesv	strict	587	520	96	215	0.8442	0.7319	0.784
+ont	sniffles	permissive	661	579	17	141	0.9715	0.8242	0.8918
+ont	sniffles	default	619	545	49	183	0.9175	0.7718	0.8384
+ont	sniffles	strict	556	506	86	246	0.8547	0.6933	0.7656
+hifi	cutesv	permissive	617	499	1	185	0.998	0.7693	0.8689
+hifi	cutesv	default	593	487	13	209	0.974	0.7394	0.8406
+hifi	cutesv	strict	482	419	81	320	0.838	0.601	0.7
+hifi	sniffles	permissive	665	578	14	137	0.9764	0.8292	0.8968
+hifi	sniffles	default	630	552	38	172	0.9356	0.7855	0.854
+hifi	sniffles	strict	561	513	75	241	0.8724	0.6995	0.7765

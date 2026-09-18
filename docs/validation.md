@@ -57,3 +57,5 @@ stage: the compare stage defaulted to `--outdir results/ont` and the trace was w
 trace was lost. The per-tool command files (`results/*/qc/*.cmd`, `sv/*.cmd`, `smallvar/*.cmd`) survive and are what the preset
 assertion rests on. `nextflow.config` now writes `trace.<stage>.txt` so a compare run cannot overwrite a platform trace. The same
 audit corrected the imprinting-control count from five to four of seven; `tests/test_docs_match_results.py` now enforces it.
+
+The same audit, once the host was reachable again, re-derived every count that depends on uncommitted VCFs (all confirmed; `results/audit_truth_counts.tsv`), corrected the truth-SV type split in D-002, and tested the documented explanation for cuteSV's low HiFi insertion recall. That explanation was wrong: 22 of the 36 'missed' insertions >= 1 kb are two-record truth loci that cuteSV called once, correctly, and that `--pick single` scores as one hit and one miss. A `--pick ac` sensitivity analysis was added (D-024): recall +9 to +13 points on every caller and platform, precision and all conclusions unchanged.

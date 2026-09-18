@@ -1,0 +1,24 @@
+quantity	value	note
+sv_bed_regions_chr20	214	
+sv_bed_bp_chr20	58600190	
+truth_sv_chr20_ge50bp_after_ALTstar_removal	1624	
+truth_sv_chr20_gt50kb	4	
+truth_sv_chr20_50bp_50kb_all	1620	
+truth_sv_chr20_50bp_50kb_DEL	519	
+truth_sv_chr20_50bp_50kb_INS	1101	
+truth_sv_chr20_50bp_50kb_inside_bed_all	802	python containment check; Truvari reports 802/254/548
+truth_sv_chr20_50bp_50kb_inside_bed_DEL	254	python containment check; Truvari reports 802/254/548
+truth_sv_chr20_50bp_50kb_inside_bed_INS	548	python containment check; Truvari reports 802/254/548
+truth_smvar_chr20_records_filter_dot	120027	
+truth_smvar_chr20_heterozygous	72728	
+truth_het_per_Mb_chr20	1128.5	
+truth_het_within_10kb_of_L3MBTL1_DMR	0	
+truth_het_within_20kb_of_L3MBTL1_DMR	0	
+truth_het_within_45kb_of_L3MBTL1_DMR	0	
+truth_het_within_100kb_of_L3MBTL1_DMR	4	
+truth_het_within_500kb_of_L3MBTL1_DMR	7	
+nearest_truth_het_left_of_L3MBTL1_DMR_distance_bp	85910	
+nearest_truth_het_right_distance_bp	546967	
+unfiltered_v5.0q_het_within_45kb_of_L3MBTL1_DMR	0	includes HET/GAP-flagged records
+ont_clair3_pass_het_within_45kb_of_L3MBTL1_DMR	6	phased=4; 43496629:CAA>C:q3;43498894:C>CA:q11;43499196:G>GTTATTA:q8;43501949:C>CT:q18;43510406:C>CTTT:q3;43519336:CAA>C:q5
+hifi_clair3_pass_het_within_45kb_of_L3MBTL1_DMR	13	phased=7; 43472009:C>CA:q3;43481096:CA>C:q2;43488989:C>CTT:q7;43490425:CTTTTT>C:q10;43491412:C>CTT:q12;43496629:CA>C:q6;43497396:C>CTTT:q10;43518153:C>CT:q6;43518851:C>CA:q8;43522457:GTT>G:q5;43522780:CT>C:q11;43551366:T>TA:q4
